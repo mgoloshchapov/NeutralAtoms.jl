@@ -1,6 +1,6 @@
-# ColdAtoms.jl Documentation
+# NeutralAtoms.jl Documentation
 
 ```@autodocs
-Modules = [ColdAtoms]
+Modules = [NeutralAtoms]
 Pages = ["basic_experiments.jl", "rydberg_model.jl"]
 ```

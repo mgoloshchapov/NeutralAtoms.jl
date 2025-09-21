@@ -1,4 +1,4 @@
-using Documenter, ColdAtoms
+using Documenter, NeutralAtoms
 
 push!(LOAD_PATH,"../src/")
 
@@ -9,7 +9,7 @@ format = Documenter.HTML(
 )
 
 makedocs(
-    sitename="ColdAtoms.jl",
+    sitename="NeutralAtoms.jl",
     format=format,
     authors="M.Y. Goloshchapov",
     pages = [
@@ -20,5 +20,5 @@ makedocs(
     )
 
 deploydocs(
-    repo = "https://github.com/mgoloshchapov/ColdAtoms.jl",
+    repo = "https://github.com/mgoloshchapov/NeutralAtoms.jl",
 )

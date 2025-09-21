@@ -1,5 +1,6 @@
 /Manifest.toml
 *.DS_Store
 docs/build/
+docs/Manifest.toml
 .vscode
 notebooks

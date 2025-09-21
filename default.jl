@@ -80,7 +80,7 @@ function get_default_configs()
        # spontaneous_decay_intermediate = false;
        # spontaneous_decay_rydberg = false;
 
-       cfg = ColdAtoms.RydbergConfig(
+       cfg = NeutralAtoms.RydbergConfig(
               tspan,
               ψ0,
 
@@ -121,7 +121,7 @@ function get_default_configs()
        tspan_cz = [0.0, 2*τ];
 
 
-       cfg_czlp = ColdAtoms.CZLPConfig(
+       cfg_czlp = NeutralAtoms.CZLPConfig(
               tspan_cz,
               ψ0_cz,
 

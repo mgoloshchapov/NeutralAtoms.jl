@@ -1,7 +1,7 @@
-# ColdAtoms.jl
+# NeutralAtoms.jl
 
-[![Build Status](https://github.com/mgoloshchapov/ColdAtoms.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/mgoloshchapov/ColdAtoms.jl/actions/workflows/CI.yml?query=branch%3Amain)
-[![docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://mgoloshchapov.github.io/ColdAtoms.jl/dev/)
+[![Build Status](https://github.com/mgoloshchapov/NeutralAtoms.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/mgoloshchapov/NeutralAtoms.jl/actions/workflows/CI.yml?query=branch%3Amain)
+[![docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://mgoloshchapov.github.io/NeutralAtoms.jl/dev/)
 
 This package provides a set of tools to simulate experiments with neutral atoms.
 
@@ -10,13 +10,13 @@ This package provides a set of tools to simulate experiments with neutral atoms.
 Paste the following line into the Julia REPL:
 
 ```
-]add "https://github.com/mgoloshchapov/ColdAtoms.jl"
+]add "https://github.com/mgoloshchapov/NeutralAtoms.jl"
 ```
 
 or
 
 ```julia
-using Pkg; Pkg.add(PackageSpec(url="https://github.com/mgoloshchapov/ColdAtoms.jl"))
+using Pkg; Pkg.add(PackageSpec(url="https://github.com/mgoloshchapov/NeutralAtoms.jl"))
 ```
 
 ## Package features
