@@ -175,7 +175,25 @@ function get_parity_fidelity(cfg::CZLPConfig; ode_kwargs...)
     # return ϕ_list, F_list_1, F_list_2, ϕ_list[argmax(F_list_1)]
 end
 
+function get_parity(cfg::CZLPConfig, ϕ_cal; ode_kwargs...)
+    cfg_parity = deepcopy(cfg)
+    ket_ineg = (ket_0 - 1.0im * ket_1) / sqrt(2) #ket_pos = (ket_0 + ket_1) / sqrt(2)
+    S_ZZ = Z ⊗ Z;
 
+    cfg_parity.ψ0 = ket_ineg ⊗ ket_ineg #ket_pos ⊗ ket_pos
+    ρ1 = simulation_czlp(cfg_parity; ode_kwargs...)[1][end] #    Had = Id ⊗ Hadamard
+
+    ϕ_list =  [0.0:0.001:2π;]; #-ϕ1 .+ π/2 .+
+    global_RZ = ϕ -> RZ(ϕ) ⊗ RZ(ϕ); #Had * global_RZ(ϕ) * ρ1 * dagger(Had * global_RZ(ϕ)) #(Phi_p ⊗ dagger(Phi_p))
+    global_RX = x -> RX(x) ⊗ RX(x);
+    θ = - cfg_parity.ϕ_RZ + ϕ_cal - π
+    U = a -> global_RX(π/2) * global_RZ(a) * global_RX(5*π/4)
+
+    Par_list = [real(expect(S_ZZ , U(ϕ) * global_RZ(θ) * ρ1 * dagger(U(ϕ) * global_RZ(θ)) ) ) for ϕ in ϕ_list];
+    plot(ϕ_list, Par_list)
+    return ϕ_list, Par_list #, ϕ_list[argmax(Par_list)]
+end
+#unused
 function get_parity_fidelity_temp(ρ, ϕ_RZ)
     Had = Id ⊗ Hadamard
 

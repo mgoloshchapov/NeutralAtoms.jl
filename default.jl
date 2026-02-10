@@ -113,12 +113,19 @@ function get_default_configs()
        ξ = 3.90242
        ket_pos = (ket_0 + ket_1)/sqrt(2)
        ψ0_cz = ket_pos ⊗ ket_pos
+
        Ω_twophoton = (2π/T0)
        τ = 2π / (Ω_twophoton * sqrt(ΔtoΩ^2 + 2.0))
+       VV = c6 / d^6 #3.4^6 #       Ω_twophoton / 2 / V
+       #ΔtoΩ = ΔtoΩ + Ω_twophoton/(2*VV)
+       detuning_params = [Δ0, ΔtoΩ * Ω_twophoton + δ_twophoton(Ωr, Ωb, Δ0)];
+       
        ϕ2 = 2*τ * ΔtoΩ * Ω_twophoton;
-       ϕ1 = (ϕ2 - π)/2
+       ϕ1 = (ϕ2 - π)/2  
        # tspan_cz = [0.0:τ/10:2*τ;];
        tspan_cz = [0.0, 2*τ];
+
+       #detuning_params = [Δ0, ΔtoΩ*Ω_twophoton + δ_twophoton(Ωr, Ωb, Δ0)];
 
 
        cfg_czlp = NeutralAtoms.CZLPConfig(
