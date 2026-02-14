@@ -35,7 +35,7 @@ export
     simulation_czlp, CZLPConfig, get_two_qubit_probs, plot_two_qubit_probs,
     simulation_mpi,
 
-    get_gate, project_on_qubit, get_parity_fidelity
+    get_gate, project_on_qubit, get_parity_fidelity, get_parity
         
 include("utilities.jl")
 include("basic_experiments.jl")
