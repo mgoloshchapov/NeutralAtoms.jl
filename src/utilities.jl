@@ -73,9 +73,10 @@ Vector of radial and longitudinal trap frequencies [`ωr`, `ωz`]
 function trap_frequencies(atom_params, trap_params)
     m, T = atom_params;
     U0, w0, z0 = trap_params;
-    ω = vconst/w0 * sqrt(U0/m);
+    ωr = vconst/w0 * sqrt(4 * U0/m);
+    ωz = vconst/z0 * sqrt(2 * U0/m);
     
-    return 2*ω, sqrt(2)*ω
+    return ωr, ωz;
 end;
 
 
