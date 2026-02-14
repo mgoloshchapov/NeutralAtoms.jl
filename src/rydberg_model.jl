@@ -38,7 +38,7 @@ const operators = [np, nr, σ1p, σp1, σpr, σrp];
     Z  = t -> R(t, z, vz, ωz; free=free_motion);
     Vx = t -> V(t, x, vx, ωr; free=free_motion);
     Vy = t -> V(t, y, vy, ωr; free=free_motion);
-    Vz = t -> V(t, z, vy, ωz; free=free_motion);
+    Vz = t -> V(t, z, vz, ωz; free=free_motion);
     return X, Y, Z, Vx, Vy, Vz;
 end
 
