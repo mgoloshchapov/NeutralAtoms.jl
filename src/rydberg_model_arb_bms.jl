@@ -1,87 +1,60 @@
-function Ω_red(laser_params)
-    Ω0, w0, z0 = laser_params;
-    return Ω0 
-end;
+function simulation_one_shift(shift, cfg_t::RydbergConfig; ode_kwargs...    )
+    samples = samples_generate(
+        cfg_t.trap_params,
+        cfg_t.atom_params,
+        cfg_t.n_samples;
+        harmonic=true
+        )[1]
 
-function Ω_blue(x,y,z, laser_params)
-    Ω0, w0, z0, beam_type, n, m = laser_params;
-    if beam_type == "simp_flattop_LG"
-        return simple_flattopLG_field(x,y,z,laser_params)
-    elseif beam_type == "simp_flattop_HG"
-        return simple_flattopHG_field(x,y,z,laser_params)
-    end;
-end;
+    ωr, ωz = trap_frequencies(cfg_t.atom_params, cfg_t.trap_params);
+    Δ0, δ0 = cfg_t.detuning_params;
 
-function simulation_blue_intens(
-    tspan, ψ0,  
-    atom_params,    trap_params,
-    samples,
-    red_laser_params,    blue_laser_params,
-    detuning_params,    decay_params;
-    atom_motion = true,    free_motion = true,   
-    spontaneous_decay = true, parallel = false
-    )
+    tspan_noise = [0.0:cfg_t.tspan[end]/1000:cfg_t.tspan[end];];
+    nodes = (tspan_noise, );
+    red_laser_phase_amplitudes  = cfg_t.red_laser_phase_amplitudes;
+    blue_laser_phase_amplitudes = cfg_t.blue_laser_phase_amplitudes;
 
-    N = length(samples);
-    ωr, ωz = trap_frequencies(atom_params, trap_params);
-    Δ0, δ0 = detuning_params;
+    Γ0, Γ1, Γl   = cfg_t.spontaneous_decay_intermediate ? cfg_t.decay_params[1:3] : zeros(3)
+    Γr           = cfg_t.spontaneous_decay_rydberg      ? cfg_t.decay_params[4]   :  0.0
+    decay_params = [Γ0, Γ1, Γl, Γr]
+    J = JumpOperators(decay_params)
 
-    if spontaneous_decay
-        decay_params_temp = decay_params;
-    else
-        decay_params_temp = [0.0, 0.0];
-    end;
-
-    Γg, Γgt = decay_params_temp;
-    J, Jdagger = [sqrt(Γg)*σgp, sqrt(Γgt)*σgtp], [sqrt(Γg)*σpg, sqrt(Γgt)*σpgt];
-
-    ρ0 = ψ0 ⊗ dagger(ψ0);
-
+    ρ0 = cfg_t.ψ0 ⊗ dagger(cfg_t.ψ0);
     #Density matrix averaged over realizations of laser noise and atom dynamics.
-    ρ_mean = [zero(ψ0 ⊗ dagger(ψ0)) for _ ∈ 1:length(tspan)];
-    ρ_temp = [zero(ψ0 ⊗ dagger(ψ0)) for _ ∈ 1:length(tspan)];
-
+    ρ  = [zero(ρ0) for _ ∈ 1:length(cfg_t.tspan)];
+    ρt  = [zero(ρ0) for _ ∈ 1:length(cfg_t.tspan)];
     #Second moment for error estimation of level populations. 
-    ρ2_mean = [zero(ψ0 ⊗ dagger(ψ0)) for _ ∈ 1:length(tspan)];
-    
-    for i ∈ 1:N
-        if atom_motion
-            #Atom initial conditions
-            xi, yi, zi, vxi, vyi, vzi = samples[i];
-        else
-            xi, yi, zi, vxi, vyi, vzi = zeros(6);
-        end;
+    ρ2 = [zero(ρ0) for _ ∈ 1:length(cfg_t.tspan)];
+
+    function __simulation(sample)
+        H = GenerateHamiltonian(
+            sample .+ vcat(shift, [0.,0.,0.]), 
+            ωr, ωz,
+            cfg_t.free_motion,
+            cfg_t.atom_motion,
+            cfg_t.laser_noise,
         
-        #Atom trajectories
-        X = t -> R(t, xi, vxi, ωr; free=free_motion);
-        Y = t -> R(t, yi, vyi, ωr; free=free_motion);
-        Z = t -> R(t, zi, vzi, ωz; free=free_motion);
-        Vz = t -> V(t, zi, vzi, ωz; free=free_motion);
-
-        #Hamiltonian params trajectories
-        Ht = TimeDependentSum(
-        [
-            t -> -Δ(Vz(t), red_laser_params) - Δ0;
-            t -> -δ(Vz(t), red_laser_params, blue_laser_params[1:3]; parallel=parallel) - δ0;
-            t ->  Ω_red(red_laser_params) / 2.0;
-            t ->  conj(Ω_red(red_laser_params) / 2.0);
-            t -> Ω_blue(X(t), Y(t), Z(t), blue_laser_params) / 2.0;
-            t -> conj(Ω_blue(X(t), Y(t), Z(t), blue_laser_params) / 2.0);
-        ],
-        operators
-        );
-
-        # #Returns hamiltonian and jump operators in a form required by timeevolution.master_dynamic
-        function super_operator(t, rho)
-            return Ht, J, Jdagger;
-        end;
+            tspan_noise,
+            cfg_t.f,
+            red_laser_phase_amplitudes,
+            blue_laser_phase_amplitudes,
+            nodes,
         
-        _, ρ_temp = timeevolution.master_dynamic(tspan, ρ0, super_operator);
+            cfg_t.red_laser_params,
+            cfg_t.blue_laser_params,
+        
+            Δ0, 
+            δ0
+            )
 
-        ρ_mean = ρ_mean + ρ_temp;
-        ρ2_mean = ρ2_mean + ρ_temp .^ 2;
+        ρt .= timeevolution.master_dynamic(cfg_t.tspan, ρ0, H, J; ode_kwargs...)[2];
+        ρ  .+= ρt
+        ρ2 .+= ρt .^ 2
+    end
+
+    for sample in ProgressBars.ProgressBar(samples)
+        __simulation(sample)
     end;
 
-    return ρ_mean/N, ρ2_mean/N
+    return ρ ./ cfg_t.n_samples, ρ2 ./ cfg_t.n_samples
 end;
-

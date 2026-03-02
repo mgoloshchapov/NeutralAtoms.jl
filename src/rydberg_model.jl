@@ -42,40 +42,44 @@ const operators = [np, nr, σ1p, σp1, σpr, σrp];
     return X, Y, Z, Vx, Vy, Vz;
 end
 
-#Due to atom dynamics
-@inline function Ω_old(x, y, z, laser_params)
-    Ω0, w0, z0, θ, n = laser_params;
-    return Ω0 .* A(x, y, z, w0, z0; n=n, θ=θ) .* A_phase(x, y, z, w0, z0; θ=θ);
+@inline function gauss_field(x, y, z, w0, z0; n0=1, θ0=0)
+    return A(x, y, z, w0, z0; n=n0, θ=θ0) .* A_phase(x, y, z, w0, z0; θ=θ0)
 end;
 
-@inline function Ω(x, y, z, laser_params)
-    if length(laser_params) == 5
-        Ω0, w0, z0, θ, n = laser_params;
-        return Ω0 .* A(x, y, z, w0, z0; n=1, θ=θ) .* A_phase(x, y, z, w0, z0; θ=θ);
+@inline function Ω(x, y, z, laser_params) 
+    if (laser_params["type"] == "gauss")
+        w0 = laser_params["w0"]
+        z0 = laser_params["z0"]
+        θ = laser_params["θ"]
+        n_sg = laser_params["n_sg"]
+        return laser_params["Ω"] .* gauss_field(x, y, z, w0, z0; n0=n_sg, θ0=θ) #A(x, y, z, w0, z0; n=n_sg, θ=θ) .* A_phase(x, y, z, w0, z0; θ=θ);
+     
+    elseif (laser_params["type"] == "flattop")
+        θ = laser_params["θ"]
+        xx, zz = x*cos(θ) - z*sin(θ), x*sin(θ) + z*cos(θ)
+        Ω_w_z = [laser_params["Ω"], laser_params["w0"],laser_params["z0"]] 
+        return reconstruct_HG_field_2d(xx, y, zz, Ω_w_z, laser_params["coeffs_xy"]) #, laser_params["coeffs_xy"])
+    
+    elseif (laser_params["type"] == "2gauss")
+        θ = laser_params["θ"]
 
-    elseif length(laser_params) == 6
-        Ω0, w0, z0, beam_type, n, m = laser_params;
-        if (n==0)&&(m==0)
-            return Ω0 .* A(x, y, z, w0, z0; n=1, θ=0) .* A_phase(x, y, z, w0, z0; θ=0);
-        elseif beam_type == "simp_flattop_LG"
-            return simple_flattopLG_field(x,y,z,laser_params)
-        end;
+        x1, y1, z1 = laser_params["beams_centers"][1]
+        E1 = laser_params["Ω"] .* gauss_field(x.-x1, y.-y1, z.-z1, laser_params["w0"], laser_params["z0"]; θ0=θ)
+        
+        x2, y2, z2 = laser_params["beams_centers"][2]
+        E2 = laser_params["Ω1"] .* gauss_field(x.-x2, y.-y2, z.-z2, laser_params["w1"], laser_params["z1"]; θ0=θ)
 
-    elseif length(laser_params) == 7
-        Ω0, w0, z0, beam_type, n, m, sqz = laser_params;
-        if (n==0)&&(m==0)
-            return Ω0 .* A(x, y, z, w0, z0; n=1, θ=0) .* A_phase(x, y, z, w0, z0; θ=0)
-        elseif beam_type == "simp_flattop_HG"
-            return simple_flattopHG_field(x,y,z,laser_params)
-        end;
+        return E1 .+ exp(1.0im * laser_params["rel_phase"]) .* E2
     else
-        println("err")
+        throw(error("Unsupported type of beam"))
     end;
+        #elseif (laser_params["type"] == "flattop")
+        
 end;
 
 #Due to Doppler shift for red laser
 @inline function Δ(vx, vz, laser_params)
-    w0, z0, θ = laser_params[2:4]
+    w0, z0, θ =  laser_params["w0"], laser_params["z0"], laser_params["θ"] #laser_params[2:4]
     k = 2.0 * z0/w0^2;
 
     Δx = k * sin(θ) * vx
@@ -85,8 +89,8 @@ end;
 
 #Due to Doppler shifts for red and blue lasers
 @inline function δ(vx, vz, red_laser_params, blue_laser_params)
-    wr0, zr0, θr = red_laser_params[2:4];
-    wb0, zb0, θb = blue_laser_params[2:4];
+    wr0, zr0, θr = red_laser_params["w0"], red_laser_params["z0"], red_laser_params["θ"]  #red_laser_params[2:4];
+    wb0, zb0, θb = blue_laser_params["w0"], blue_laser_params["z0"], blue_laser_params["θ"]  #blue_laser_params[2:4];
     
     kr = 2.0 * zr0/wr0^2;
     kb = 2.0 * zb0/wb0^2;
@@ -96,31 +100,6 @@ end;
 
     return δx + δz
 end;
-
-### Change operators
-#Two-photon Rydberg hamiltonian for 1 atom
-function Hamiltonian(Ωr, Ωb, Δ, δ)
-    return TimeDependentSum(
-        [
-            t -> -Δ(t),
-            t -> -δ(t),
-            t -> Ωr(t) ./2.0,
-            t -> conj.(Ωr(t)) ./2.0,
-            t -> Ωb(t)/2.0,
-            t -> conj.(Ωb(t)) ./2.0,
-        ],
-        
-        [
-            np,
-            nr,
-            σgp,
-            σpg,
-            σpr,
-            σrp  
-        ]
-    )
-end;
-
 
 #Jump operators for master equation 
 @inline function JumpOperators(decay_params)
@@ -169,7 +148,6 @@ end;
         ϕ_red  = t -> 0.0;
         ϕ_blue = t -> 0.0;
     end
-
 
     # Hamiltonian params trajectories
     Ωr = t -> exp(1.0im * ϕ_red(t)) * Ω(X(t), Y(t), Z(t), red_laser_params);
@@ -230,7 +208,6 @@ function simulation(
     #Second moment for error estimation of level populations. 
     ρ2 = [zero(ρ0) for _ ∈ 1:length(cfg_t.tspan)];
 
-
     function __simulation(sample)
         H = GenerateHamiltonian(
             sample, 
@@ -281,7 +258,6 @@ function Ωr_required(Ω, Ωb, Δ)
 end;
 
 
-
 function calibrate_two_photon(cfg::RydbergConfig, n_samples=1000)
     cfg_calibrated = deepcopy(cfg)
     Ωr = cfg.red_laser_params[1]
@@ -304,85 +280,3 @@ function calibrate_two_photon(cfg::RydbergConfig, n_samples=1000)
 
     return cfg_calibrated
 end
-
-
-
-"""
-    struct send_rho
-        r::Vector{Operator{NLevelBasis{Int64}, NLevelBasis{Int64}, Matrix{ComplexF64}}}
-    end
-    #function sum_for_MPI(A::Vector{Operator{NLevelBasis{Int64}, NLevelBasis{Int64}, Matrix{ComplexF64}}},     B::Vector{Operator{NLevelBasis{Int64}, NLevelBasis{Int64}, Matrix{ComplexF64}}})
-    function  sum_for_MPI(A::send_rho, B::send_rho)
-        ro = A.r .+ B.r
-        return send_rho(ro)
-    end
-    MPI.@RegisterOp(sum_for_MPI, send_rho)#T::Vector{Operator{NLevelBasis{Int64}, NLevelBasis{Int64}, Matrix{ComplexF64}}})
-"""
-function simulation_mpi(cfg::RydbergConfig)
-    samples = samples_generate(cfg.trap_params,
-        cfg.atom_params,cfg.n_samples; harmonic=true)[1]
-
-    MPI.Init()
-    rank = MPI.Comm_rank(MPI.COMM_WORLD)
-    size = MPI.Comm_size(MPI.COMM_WORLD)
-
-    """if rank == 0
-        samples = samples_generate(cfg.trap_params,cfg.atom_params, cfg.n_samples÷size ;harmonic=false)[1]
-    else
-        samples = nothing
-    end"""
-    samples = samples_generate(cfg.trap_params,cfg.atom_params, cfg.n_samples÷size ;harmonic=false)[1]
-    println(length(samples))
-    
-    #Bcasted_samples = MPI.Bcast(samples, MPI.COMM_WORLD, root=0)
-    MPI.bcast(samples, MPI.COMM_WORLD, root = 0)
-    
-    ωr, ωz = trap_frequencies(cfg.atom_params, cfg.trap_params);
-    Δ0, δ0 = cfg.detuning_params;
-    Γ0, Γ1, Γl   = cfg.spontaneous_decay_intermediate ? cfg.decay_params[1:3] : zeros(3)
-    Γr           = cfg.spontaneous_decay_rydberg      ? cfg.decay_params[4]   :  0.0
-    decay_params = [Γ0, Γ1, Γl, Γr]
-    J, Jdagger   = JumpOperators(decay_params)
-    ρ0 = cfg.ψ0 ⊗ dagger(cfg.ψ0);
-    
-    ρ_res  = [zero(ρ0) for _ ∈ 1:length(cfg.tspan)];
-    ρt  = [zero(ρ0) for _ ∈ 1:length(cfg.tspan)];
-    #ρ2 = [zero(ρ0) for _ ∈ 1:length(cfg.tspan)];
-
-    rho  = [zero(ρ0.data) for _ ∈ 1:length(cfg.tspan)]; #real(expect(r1 ⊗ dagger(r1), ρ_res)) #[zero(real(expect(r1 ⊗ dagger(r1) ⊗ Id, ρ0))) for _ ∈ 1:length(cfg.tspan)];
-    rec_rho  = [zero(ρ0.data) for _ ∈ 1:length(cfg.tspan)]; #real(expect(r1 ⊗ dagger(r1) , ρ_res)) #rec_rho  = [zero(real(expect(r1 ⊗ dagger(r1) ⊗ Id, ρ0))) for _ ∈ 1:length(cfg.tspan)];
-    #rho2 = [zero(ρ0) for _ ∈ 1:length(cfg.tspan)];
-
-    tspan_noise = [0.0:cfg.tspan[end]/1000:cfg.tspan[end];];
-    nodes = (tspan_noise, );
-    red_laser_phase_amplitudes  = cfg.laser_noise ? cfg.red_laser_phase_amplitudes  : zero(cfg.red_laser_phase_amplitudes);
-    blue_laser_phase_amplitudes = cfg.laser_noise ? cfg.blue_laser_phase_amplitudes : zero(cfg.blue_laser_phase_amplitudes);
-    
-    N = length(samples)
-    @time for sample in samples #ProgressBars.ProgressBar(samples) #Bcasted_samples)
-        Ht = GenerateHamiltonian(
-            sample, ωr, ωz, cfg.free_motion, cfg.atom_motion,
-            cfg.laser_noise,
-            tspan_noise, cfg.f,red_laser_phase_amplitudes,
-            blue_laser_phase_amplitudes,nodes,
-            cfg.red_laser_params,cfg.blue_laser_params,Δ0, δ0)
-
-        super_operator(t, rho) = Ht, J, Jdagger
-        _, ρt = timeevolution.master_dynamic(cfg.tspan, ρ0, super_operator);
-
-        ρ_res  .+= ρt
-         
-        #ρ2 .+= ρt .^ 2 
-    end;
-    rho = [ρ_ress.data for ρ_ress in ρ_res]#ρ_res.data #real(expect(r1 ⊗ dagger(r1), ρ_res)); 
-
-    rec_rho = MPI.Reduce(rho, MPI.SUM, MPI.COMM_WORLD; root=0)
-
-    #MPI.Finalize()
-    if rank == 0
-        return rho ./ cfg.n_samples #, rho2 ./ cfg.n_samples
-    else
-        return "_"
-    end;
-
-end;

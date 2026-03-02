@@ -20,22 +20,28 @@ using Colors
 using Statistics
 
 export 
+#     g1, p1, r1, gt1, zero1,
+#     Id, two_atom_simulation,
+#     direct_CZ_simulation,
     w0_to_z0, trap_frequencies, E, I,
     release_recapture,
     samples_generate, R, V, get_trap_params, H, samples_visualise,
     Sϕ, ϕ_amplitudes, ϕ,
     Ω_twophoton, T_twophoton, δ_twophoton, Ωr_required, 
     ket_0, ket_1, ket_r, ket_p, ket_l,
-    simple_flattopHG_field,simple_flattopLG_field,
-    HG_coeff, simulation_blue_intens,
-#     g1, p1, r1, gt1, zero1,
-#     Id, two_atom_simulation,
-#     direct_CZ_simulation,
+    
+    simple_flattopHG_field, simple_flattopLG_field,
+    HG_coeff, gauss_field,
+    decomposition_2d, reconstruct_HG_field_2d,
+
     simulation, RydbergConfig, get_rydberg_probs, plot_rydberg_probs,
     simulation_czlp, CZLPConfig, get_two_qubit_probs, plot_two_qubit_probs,
-    simulation_mpi,
+    simulation_one_shift, simulation_czlp_rec2d,
 
-    get_gate, project_on_qubit, get_parity_fidelity
+    get_gate, project_on_qubit,
+    get_parity_fidelity, get_cz_infidelity,
+    get_parity,
+    get_fidelity_osc, get_parity_osc
         
 include("utilities.jl")
 include("basic_experiments.jl")
@@ -44,8 +50,8 @@ include("atom_sampler.jl")
 include("rydberg_model.jl")
 include("arbitrary_beams.jl")
 include("rydberg_model_arb_bms.jl")
-# include("two_atom_model.jl")
 include("cz_model.jl")
+include("cz_model_w_rec_field.jl")
 include("fidelity.jl")
 include("gates.jl")
 
