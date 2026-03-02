@@ -50,7 +50,6 @@ include("rydberg_model.jl")
 include("arbitrary_beams.jl")
 include("rydberg_model_arb_bms.jl")
 include("cz_model.jl")
-include("cz_model_w_rec_field.jl")
 include("fidelity.jl")
 include("gates.jl")
 
