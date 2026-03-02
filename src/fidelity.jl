@@ -193,6 +193,37 @@ function get_parity(cfg::CZLPConfig, ϕ_cal; ode_kwargs...)
     plot(ϕ_list, Par_list)
     return ϕ_list, Par_list #, ϕ_list[argmax(Par_list)]
 end
+
+
+function get_fidelity_osc(ρ, state)
+    Had = Id ⊗ Hadamard
+    ones = ket_1 ⊗ ket_1
+    CZ = Id ⊗ Id - 2*(ones ⊗ dagger(ones));
+    state_tr = CZ * state
+
+    ϕ_list = [0.0:0.001:2π;];
+    global_RZ = ϕ -> RZ(ϕ) ⊗ RZ(ϕ); 
+    #F_list = [real(dagger(state)  * Had * global_RZ(ϕ) * ρ * dagger(Had * global_RZ(ϕ)) * state) for ϕ in ϕ_list];
+    F_list = [real(dagger(state_tr) * global_RZ(ϕ) * ρ * dagger( global_RZ(ϕ)) * state_tr) for ϕ in ϕ_list];
+    #plot(ϕ_list, F_list_1)
+    return ϕ_list, F_list, ϕ_list[argmax(F_list)]
+end
+
+function get_parity_osc(ρ, ϕ_cal)
+    S_ZZ = Z ⊗ Z;
+
+    ϕ_list =  [0.0:0.001:2π;]; #-ϕ1 .+ π/2 .+
+    global_RZ = ϕ -> RZ(ϕ) ⊗ RZ(ϕ); #Had * global_RZ(ϕ) * ρ1 * dagger(Had * global_RZ(ϕ)) #(Phi_p ⊗ dagger(Phi_p))
+    global_RX = x -> RX(x) ⊗ RX(x);
+
+    θ = ϕ_cal; # - cfg_parity.ϕ_RZ + ϕ_cal - π
+    U = a -> global_RX(π/2) * global_RZ(a) * global_RX(5*π/4)
+
+    Par_list = [real(expect(S_ZZ , U(ϕ) * global_RZ(θ) * ρ * dagger(U(ϕ) * global_RZ(θ)) ) ) for ϕ in ϕ_list];
+    plot(ϕ_list, Par_list)
+    return ϕ_list, Par_list #, ϕ_list[argmax(Par_list)]
+end
+
 #unused
 function get_parity_fidelity_temp(ρ, ϕ_RZ)
     Had = Id ⊗ Hadamard
@@ -256,7 +287,6 @@ function get_cz_infidelity(
 
     return infidelities, calibration_error
 end
-
 
 function plot_cz_infidelity(infidelities;
     dir_name="/Users/goloshch/ColdAtoms_test/experiments/23_07_2025/results/", 

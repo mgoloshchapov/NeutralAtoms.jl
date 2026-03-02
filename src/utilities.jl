@@ -187,8 +187,8 @@ mutable struct RydbergConfig
     red_laser_phase_amplitudes::Vector{Float64}
     blue_laser_phase_amplitudes::Vector{Float64}
     
-    red_laser_params::Vector{Float64}
-    blue_laser_params::Vector{Float64}
+    red_laser_params::Dict{String, Any}#Vector{Float64}
+    blue_laser_params::Dict{String, Any}#Vector{Float64}
     
     detuning_params::Vector{Float64}
     decay_params::Vector{Float64}
@@ -213,8 +213,8 @@ mutable struct CZLPConfig
     red_laser_phase_amplitudes::Vector{Float64}
     blue_laser_phase_amplitudes::Vector{Float64}
     
-    red_laser_params::Vector{Float64}
-    blue_laser_params::Vector{Float64}
+    red_laser_params::Dict{String, Any}#Vector{Float64}
+    blue_laser_params::Dict{String, Any}#Vector{Float64}
     
     detuning_params::Vector{Float64}
     decay_params::Vector{Float64}

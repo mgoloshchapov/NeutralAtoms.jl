@@ -6,12 +6,14 @@ using Serialization
 function get_default_configs()
        # Atom params
        m = 86.9091835;     
-       T = 100.0;
+       T = 100.0 # 70.0;
        atom_params = [m, T];
 
        # Trap params
-       U0 = 1000.0;
-       w0 = 1.0;
+       #U0 = 1000.0; 
+       U0 = 800 * 0.65; #797.7 changed 26.02.2026
+       #w0 = 1.0;
+       w0 = 1.42; 
        λ0 = 0.813;
        M2 = 1.0;
        z0 = w0_to_z0(w0, λ0, M2);
@@ -38,14 +40,16 @@ function get_default_configs()
        λr = 0.795;
        λb = 0.475;
        wr = 50.0;
-       wb = 10.0;
+       wb = 2.0 #2.0 #10.0;
        zr = w0_to_z0(wr, λr);
        zb = w0_to_z0(wb, λb);
 
-       Δ0 = 2.0*π * 1000.0;
-       Ω = 2π * 2.0;
-       Ωr = sqrt(2* Δ0 * Ω);
-       Ωb = sqrt(2* Δ0 * Ω);
+       Δ0 = 2.0*π * 870 #1600.0 #1000.0 #* 1600
+       Ω = 2π * 2.41 # 2.0;
+       #a = 1.0 
+       a = 2.0 #
+       Ωr = a * sqrt(2* Δ0 * Ω);
+       Ωb = 1/a * sqrt(2* Δ0 * Ω);
        # Orientation and flat-top param, n=1 - gauss
        # θr = π/2;
        θr = π/2;
@@ -53,10 +57,14 @@ function get_default_configs()
        nr = 1;
        nb = 1;
 
-       red_laser_params = [Ωr, wr, zr, θr, nr];
-       blue_laser_params = [Ωb, wb, zb, θb, nb];
+       #red_laser_params = [Ωr, wr, zr, θr] #, nr];
+       #blue_laser_params = [Ωb, wb, zb, θb] #, nb];
+       red_laser_params = Dict("Ω" => Ωr,"w0" => wr,"z0" => zr,
+              "θ" => θr,"n_sg" => nr,"type" => "gauss")
+       blue_laser_params = Dict("Ω" => Ωb,"w0" => wb,"z0" => zb,
+              "θ" => θb,"n_sg" => nb,"type" => "gauss")
 
-       detuning_params = [Δ0, δ_twophoton(Ωr, Ωb, Δ0)];
+       detuning_params = [Δ0, -δ_twophoton(Ωr, Ωb, Δ0)];
        Γ = 2.0*π * 5.75;
        Γ0, Γ1, Γl = Γ/4, Γ/4, 2*Γ/4;
        # Quasiclassical calculations of BBR-induced depopulation rates and effective lifetimes
@@ -68,7 +76,8 @@ function get_default_configs()
        # Simulation params
        T0 = T_twophoton(Ωr, Ωb, Δ0)
        # tspan = [0.0:T0/10:2*T0;];
-       tspan = [0.0:T0/20:5*T0;];
+       #tspan = [0.0:T0/20:5*T0;];
+       tspan = [0.0:T0/25:3.0;];
        ψ0 = ket_1;
        n_samples = 20;
 
@@ -104,21 +113,28 @@ function get_default_configs()
               spontaneous_decay_intermediate,
               spontaneous_decay_rydberg
               );
-
-       d = 2.0;
-       atom_centers = [[-d/2, 0.0, 0.0], [d/2, 0.0, 0.0]]
+ 
+       d = 3.4 #2.0;
+       #atom_centers = [[-d/2, 0.0, 0.0], [d/2, 0.0, 0.0]]
+       atom_centers = [[0.0,-d/2, 0.0], [0.0, d/2, 0.0]]
        c6 = 2π * 135298
-       ΔtoΩ = 0.377371
+       
+       """Ωτ = 4.278785545408966  # с учетом блокады
+       ΔtoΩ = 0.38378019520864026 
+       ξ = 3.9162081717218746"""
+       ΔtoΩ = 0.377371 #идеальные
        Ωτ = 4.29268
        ξ = 3.90242
+       
        ket_pos = (ket_0 + ket_1)/sqrt(2)
        ψ0_cz = ket_pos ⊗ ket_pos
 
        Ω_twophoton = (2π/T0)
-       τ = 2π / (Ω_twophoton * sqrt(ΔtoΩ^2 + 2.0))
+       #τ = 2π / (Ω_twophoton * sqrt(ΔtoΩ^2 + 2.0))
+       τ = Ωτ/Ω_twophoton
        VV = c6 / d^6 #3.4^6 #       Ω_twophoton / 2 / V
        #ΔtoΩ = ΔtoΩ + Ω_twophoton/(2*VV)
-       detuning_params = [Δ0, ΔtoΩ * Ω_twophoton + δ_twophoton(Ωr, Ωb, Δ0)];
+       detuning_params = [Δ0, ΔtoΩ * Ω_twophoton - δ_twophoton(Ωr, Ωb, Δ0)];
        
        ϕ2 = 2*τ * ΔtoΩ * Ω_twophoton;
        ϕ1 = (ϕ2 - π)/2  
