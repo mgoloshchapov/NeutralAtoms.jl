@@ -10,9 +10,11 @@ const vconst = sqrt(E0/mu); #Useful constant for kinetic energy
 const r0 = 1e-6;            #Characteristic distance in m
 #------------------------------------
 
+"""
+    Π(cord, trap_params)
 
-
-#Potential energy in gaussian beam
+Return the Gaussian-tweezer potential energy at phase-space point `cord`.
+"""
 function Π(cord, trap_params)
     U0, w0, z0 = trap_params;
     x, y, z, vx, vy, vz = cord;
@@ -20,7 +22,12 @@ function Π(cord, trap_params)
 end;
 
 
-#Potential energy in gaussian beam in harmonic approximation
+"""
+    Π_Harmonic(cord, trap_params)
+
+Return the harmonic approximation to the tweezer potential used for fast thermal
+sampling near the trap center.
+"""
 function Π_Harmonic(cord, trap_params)
     U0, w0, z0 = trap_params;
     x, y, z, vx, vy, vz = cord;
@@ -31,7 +38,11 @@ end;
 
 
 
-#Kinetic energy
+"""
+    K(cord, trap_params, m)
+
+Return the kinetic energy associated with `cord` for an atom of mass `m`.
+"""
 function K(cord, trap_params, m)
     U0, w0, z0 = trap_params;
     x, y, z, vx, vy, vz = cord;
@@ -40,7 +51,14 @@ end;
 
 
 
-#Total energy
+"""
+    H(cord, trap_params, m; harmonic=false)
+
+Return the total energy of one sampled atom in the tweezer model.
+
+Set `harmonic = true` to use `Π_Harmonic`; otherwise the full Gaussian
+potential `Π` is used.
+"""
 function H(cord, trap_params, m; harmonic=false)
     if harmonic
         return Π_Harmonic(cord, trap_params) .+ K(cord, trap_params, m)
@@ -50,7 +68,12 @@ function H(cord, trap_params, m; harmonic=false)
 end;
 
 
-#Target distribution for Monte-Carlo
+"""
+    prob_boltzmann(cord, trap_params, atom_params; harmonic=false)
+
+Return the unnormalized Boltzmann weight used by the Metropolis sampler in
+`samples_generate`.
+"""
 function prob_boltzmann(cord, trap_params, atom_params; harmonic=false)    
     m, T = atom_params;
     return exp.(- H(cord, trap_params, m; harmonic) ./ T)
@@ -60,22 +83,24 @@ end;
 """
     samples_generate(trap_params, atom_params, N; freq=10, skip=1000, harmonic=true)
 
-Generate Monte-Carlo samples of initial atom coordinates and velocities
+Generate Monte Carlo samples of initial atom coordinates and velocities.
 
-### Input
+# Arguments
+- `trap_params`: `[U0, w0, z0]`, with `U0` in `μK` and lengths in `μm`.
+- `atom_params`: `[m, T]`, with mass in atomic mass units and temperature in
+  `μK`.
+- `N`: number of Monte Carlo samples.
 
-- `trap_params` -- vector [trap depth ``U_{0}`` in ``\\mu K``, beam waist radius in ``\\mu m``, beam Rayleigh length in ``\\mu m``]
-- `atom_params` -- vector [atom mass in a.u., atom temperature in ``\\mu K``]
-- `N` -- number of Monte-Carlo samples, the same as number of atoms
-- `freq` -- (optional, default: `10`) number of Metropolis steps skipped between samples to reduce sample dependency
-- `skip` -- (optional, default: `1000`) number of Metropolis steps skipped before the Markov Chain is considered to reach stationary distribution
-- `harmonic` -- (optional, default: `true`) uses harmonic approximation of gaussian beam if set to `true`, otherwise uses Metropolis sampler
+# Keywords
+- `freq = 10`: number of Metropolis updates skipped between retained samples.
+- `skip = 1000`: burn-in length for the Metropolis sampler.
+- `harmonic = true`: use the harmonic approximation instead of the full
+  Metropolis sampler.
+- `eps = 1e-2`: reject samples with total energy above `U0 * (1 - eps)`.
 
-### Output
-
-Vector of Monte-Carlo samples ``[x_{i}, y_{i}, z_{i}, vx_{i}, vy_{i}, vz_{i}]`` and acceptance rate of Metropolis sampler.
-If `harmonic` set to `true`, acceptance rate is set to `1.0`
-
+# Returns
+- `(samples, acc_rate)`, where each sample is `[x, y, z, vx, vy, vz]`. For
+  `harmonic = true`, the acceptance rate is reported as `1`.
 """
 function samples_generate(trap_params, atom_params, N; freq=10, skip=1000, harmonic=true, eps=1e-2)
     U0, w0, z0 = trap_params;
@@ -121,7 +146,14 @@ function samples_generate(trap_params, atom_params, N; freq=10, skip=1000, harmo
 end;
 
 
-#Generate coordinate trajectory from Monte-Carlo initial conditions
+"""
+    R(t, ri, vi, ω; free=false)
+
+Return the position of one Cartesian coordinate at time `t`.
+
+For `free = false`, the coordinate follows harmonic motion with frequency `ω`;
+for `free = true`, it follows ballistic motion.
+"""
 function R(t, ri, vi, ω; free=false)
     # if free
     #     return ri + vi * t;
@@ -132,7 +164,13 @@ function R(t, ri, vi, ω; free=false)
 end;    
 
 
-#Generate velocity trajectory from Monte-Carlo initial conditions
+"""
+    V(t, ri, vi, ω; free=false)
+
+Return the velocity of one Cartesian coordinate at time `t`.
+
+This is the velocity companion to `R`.
+"""
 function V(t, ri, vi, ω; free=false)
     # if free
     #     return vi;
@@ -143,25 +181,27 @@ function V(t, ri, vi, ω; free=false)
 end;       
 
 
-"""
+@doc doc"""
     get_trap_params(ωr, ωz, U0, λ; m = 87.0, dif=true)
 
-Get trap parameters given trap frequencies, depth and wavelength. 
+Infer Gaussian-tweezer parameters from target trap frequencies.
 
-Trap is assumed to be formed by gaussian beam with equal radial oscillation frequencies.
+The trap is assumed to be formed by a single Gaussian beam with equal radial
+frequencies in `x` and `y`.
 
-### Input
+# Arguments
+- `ωr`: radial oscillation frequency in `MHz`.
+- `ωz`: longitudinal oscillation frequency in `MHz`.
+- `U0`: trap depth in `μK`.
+- `λ`: trap wavelength in `μm`.
 
-- `ωr` -- radial oscillation frequency in `MHz`
-- `ωr` -- longitudinal oscillation frequency in `MHz`
-- `U0` -- trap depth in `μK`
-- `λ` -- trap wavelength in `μm`
-- `m` -- atom mass in atomic units
-- `dif` -- (optional, default: `true`) if set to `true`, calculates trap parameters without using `U0` and outputs trap depth
-### Output
+# Keywords
+- `m = 87.0`: atom mass in atomic mass units.
+- `dif = true`: when `true`, infer the trap geometry from the frequency
+  difference and return the implied depth.
 
-Vector of trap parameters [`w0`, `z0`, `U`]
-
+# Returns
+- `(w0, z0, U)`: waist, Rayleigh length, and effective depth in package units.
 """
 function get_trap_params(ωr, ωz, U0, λ; m = 87.0, dif=true)
     if dif

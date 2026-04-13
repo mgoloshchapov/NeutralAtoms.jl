@@ -1,8 +1,21 @@
+"""
+    Ω_red(laser_params)
+
+Return the on-axis red-laser coupling used by the legacy arbitrary-beam model.
+"""
 function Ω_red(laser_params)
     Ω0, w0, z0 = laser_params;
     return Ω0 
 end;
 
+"""
+    Ω_blue(x, y, z, laser_params)
+
+Return the blue-laser coupling for the legacy arbitrary-beam model.
+
+The beam shape is selected from `laser_params` and dispatched to either
+`simple_flattopLG_field` or `simple_flattopHG_field`.
+"""
 function Ω_blue(x,y,z, laser_params)
     Ω0, w0, z0, beam_type, n, m = laser_params;
     if beam_type == "simp_flattop_LG"
@@ -12,6 +25,17 @@ function Ω_blue(x,y,z, laser_params)
     end;
 end;
 
+"""
+    simulation_blue_intens(tspan, ψ0, atom_params, trap_params, samples,
+        red_laser_params, blue_laser_params, detuning_params, decay_params;
+        atom_motion=true, free_motion=true, spontaneous_decay=true,
+        parallel=false)
+
+Simulate a single-atom excitation sequence with an explicitly shaped blue beam.
+
+This is an older, specialized path for beam-profile studies. For the main
+single-atom workflow, prefer `simulation` with `RydbergConfig`.
+"""
 function simulation_blue_intens(
     tspan, ψ0,  
     atom_params,    trap_params,
@@ -84,4 +108,3 @@ function simulation_blue_intens(
 
     return ρ_mean/N, ρ2_mean/N
 end;
-

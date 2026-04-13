@@ -1,3 +1,11 @@
+"""
+    is_zero(x)
+
+Return `true` when `x == 0`.
+
+This small helper is used when locating the first failed recapture event in
+`release_evolve`.
+"""
 function is_zero(x)
     return x == 0
 end;
@@ -5,22 +13,22 @@ end;
 """
     release_evolve(tspan, cord, atom_params, trap_params; eps=1e-3)
 
-Simulates evolution of atoms after turning the trap off and recapture results
+Propagate one sampled atom during the release window and record recapture.
 
-### Input
+# Arguments
+- `tspan`: release times in `μs`.
+- `cord`: sampled initial condition `[x, y, z, vx, vy, vz]`.
+- `atom_params`: `[m, T]`, with mass in atomic mass units and temperature in
+  `μK`.
+- `trap_params`: `[U0, w0, z0]`, with `U0` in `μK` and lengths in `μm`.
 
-- `tspan` -- vector specifying the points of time for which output should be displayed
-- `cord` -- vector of initial coordiantes and velocities ``[x,y,z,v_{x},v_{y},v_{z}]``
-- `atom_params` -- vector [atom mass in a.u., atom temperature in ``\\mu K``]
-- `trap_params` -- vector [trap depth ``U_{0}`` in ``\\mu K``, beam waist radius in ``\\mu m``, beam Rayleigh length in ``\\mu m``]
-- `eps` -- (optional, default: `1e-3`) cutoff to regularize Metropolis sampler, atoms that have energy over ``U_{0}(1-eps)`` are considered to be out of trap
+# Keywords
+- `eps = 1e-3`: recapture cutoff. Atoms with total energy above `U0 * (1 - eps)`
+  are treated as lost.
 
-
-### Output
-
-Binary list of length tspan, which contains 1 at idx ``i`` if atom is recaptured at `tspan[i]` 
-and 0 otherwise
-
+# Returns
+- Boolean-like vector whose `i`th entry is `1` if the atom remains recaptured at
+  `tspan[i]` and `0` otherwise.
 """
 function release_evolve(tspan, cord, atom_params, trap_params; eps=1e-3)
     xi, yi, zi, vxi, vyi, vzi = cord;
@@ -50,24 +58,31 @@ end;
 """
     release_recapture(tspan, trap_params, atom_params, N; freq=10, skip=1000, eps=1e-3, harmonic=true)
 
-Simulate release and recapture experiment to estimate atom's temperature.
+Estimate a release-and-recapture curve by averaging over `N` sampled atoms.
 
-### Input
+This is the package's temperature-estimation entry point for optical-tweezer
+experiments: sample thermal initial conditions, evolve each atom during the
+release window, and average the recapture outcomes.
 
-- `tspan` -- vector specifying the points of time for which output should be displayed
-- `trap_params` -- vector [trap depth ``U_{0}`` in ``\\mu K``, beam waist radius in ``\\mu m``, beam Rayleigh length in ``\\mu m``]
-- `atom_params` -- vector [atom mass in a.u., atom temperature in ``\\mu K``]
-- `N` -- number of Monte-Carlo samples, the same as number of atoms
-- `freq` -- (optional, default: `10`) number of Metropolis steps skipped between samples to reduce sample dependency
-- `skip` -- (optional, default: `1000`) number of Metropolis steps skipped before the Markov Chain is considered to reach stationary distribution
-- `eps` -- (optional, default: `1e-3`) cutoff to regularize Metropolis sampler, atoms that have energy over ``U_{0}(1-eps)`` are considered to be out of trap
-- `harmonic` -- (optional, default: `true`) uses harmonic approximation of gaussian beam if set to `true`, otherwise uses Metropolis sampler
+# Arguments
+- `tspan`: release times in `μs`.
+- `trap_params`: `[U0, w0, z0]`, with `U0` in `μK` and lengths in `μm`.
+- `atom_params`: `[m, T]`, with mass in atomic mass units and temperature in
+  `μK`.
+- `N`: number of Monte Carlo samples.
 
-### Output
+# Keywords
+- `freq = 10`: number of Metropolis updates skipped between retained samples.
+- `skip = 1000`: burn-in length for the Metropolis sampler.
+- `eps = 1e-3`: recapture cutoff passed to `release_evolve`.
+- `harmonic = true`: when `true`, use the harmonic approximation for fast
+  Gaussian sampling. When `false`, use the Metropolis sampler in the full trap
+  potential.
 
-List of recapture probabilities corresponding to times in `tspan` and acceptance rate of Metropolis algorithm. 
-If `harmonic` is set to `true`, acceptance rate is set to 1.0
-
+# Returns
+- `(recapture, acc_rate)`, where `recapture` is the recapture probability at each
+  time in `tspan` and `acc_rate` is the Metropolis acceptance rate. For
+  `harmonic = true`, the acceptance rate is `1`.
 """
 function release_recapture(tspan, trap_params, atom_params, N; freq=10, skip=1000, eps=1e-3, harmonic=true)
     samples, acc_rate = samples_generate(trap_params, atom_params, N; freq=freq, skip=skip, harmonic=harmonic);

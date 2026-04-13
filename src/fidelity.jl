@@ -8,6 +8,15 @@ basis_fidelity_states = [
     ]
 
 
+"""
+    get_rydberg_fidelity_configs(cfg, n_samples=20)
+
+Construct a set of derived configurations used for single-atom error-budget
+analysis.
+
+Each returned configuration isolates one decoherence mechanism or the combined
+error budget.
+"""
 function get_rydberg_fidelity_configs(cfg, n_samples=20)
     configs = OrderedDict()
 
@@ -64,6 +73,16 @@ function get_rydberg_fidelity_configs(cfg, n_samples=20)
 end 
 
 
+"""
+    get_rydberg_infidelity(cfg::RydbergConfig; U=dense(identityoperator(basis)),
+        states=basis_fidelity_states, n_samples=100, ode_kwargs...)
+
+Estimate a single-atom gate infidelity budget by averaging over input states and
+error channels.
+
+The returned dictionary separates motion, laser noise, spontaneous decay, and
+total error contributions for the effective two-photon model.
+"""
 function get_rydberg_infidelity(
     cfg::RydbergConfig;
     U=dense(identityoperator(basis)), 
@@ -95,6 +114,13 @@ function get_rydberg_infidelity(
 end
 
 
+"""
+    plot_rydberg_infidelity(infidelities; dir_name=..., file_name="plot.png",
+        title="Error budget for 2π pulse", blue=true)
+
+Plot and save a bar chart for the single-atom infidelity budget returned by
+`get_rydberg_infidelity`.
+"""
 function plot_rydberg_infidelity(
     infidelities; 
     dir_name="/Users/goloshch/ColdAtoms_test/experiments/23_07_2025/results/", 
@@ -144,6 +170,15 @@ function plot_rydberg_infidelity(
     return keys_final, values_final
 end
 
+"""
+    get_parity_fidelity(cfg::CZLPConfig; ode_kwargs...)
+
+Scan a global `RZ` phase and return the Bell-state fidelity curve used to
+calibrate the CZ protocol.
+
+# Returns
+- `(ϕ_list, F_list, ϕ_opt)`, where `ϕ_opt` maximizes the fidelity proxy.
+"""
 function get_parity_fidelity(cfg::CZLPConfig; ode_kwargs...)
     cfg_parity = deepcopy(cfg)
 
@@ -175,6 +210,12 @@ function get_parity_fidelity(cfg::CZLPConfig; ode_kwargs...)
     # return ϕ_list, F_list_1, F_list_2, ϕ_list[argmax(F_list_1)]
 end
 
+"""
+    get_parity(cfg::CZLPConfig, ϕ_cal; ode_kwargs...)
+
+Compute the parity oscillation expected after applying the CZ sequence and the
+phase correction `ϕ_cal`.
+"""
 function get_parity(cfg::CZLPConfig, ϕ_cal; ode_kwargs...)
     cfg_parity = deepcopy(cfg)
     ket_ineg = (ket_0 - 1.0im * ket_1) / sqrt(2) #ket_pos = (ket_0 + ket_1) / sqrt(2)
@@ -194,6 +235,13 @@ function get_parity(cfg::CZLPConfig, ϕ_cal; ode_kwargs...)
     return ϕ_list, Par_list #, ϕ_list[argmax(Par_list)]
 end
 #unused
+"""
+    get_parity_fidelity_temp(ρ, ϕ_RZ)
+
+Apply the parity-analysis post-rotation to an already simulated density matrix.
+
+This is a low-level helper retained for manual analysis.
+"""
 function get_parity_fidelity_temp(ρ, ϕ_RZ)
     Had = Id ⊗ Hadamard
 
@@ -208,6 +256,13 @@ function get_parity_fidelity_temp(ρ, ϕ_RZ)
 end
 
 
+"""
+    get_cz_infidelity(cfg::CZLPConfig; n_samples=1, ode_kwargs...)
+
+Estimate a CZ-gate infidelity budget using the parity-calibration workflow.
+
+The result separates calibration error from the remaining decoherence channels.
+"""
 function get_cz_infidelity(
     cfg::CZLPConfig;
     n_samples=1,
@@ -258,6 +313,13 @@ function get_cz_infidelity(
 end
 
 
+"""
+    plot_cz_infidelity(infidelities; dir_name=..., file_name="plot_cz.png",
+        title="Error budget for 2π pulse")
+
+Plot and save a bar chart for the CZ infidelity budget returned by
+`get_cz_infidelity`.
+"""
 function plot_cz_infidelity(infidelities;
     dir_name="/Users/goloshch/ColdAtoms_test/experiments/23_07_2025/results/", 
     file_name="plot_cz.png",

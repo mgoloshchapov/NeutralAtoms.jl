@@ -1,6 +1,17 @@
+"""
+    NeutralAtoms
+
+Simulation tools for neutral-atom experiments in optical tweezers.
+
+The package focuses on the workflow used in two-photon Rydberg experiments:
+trap characterization, thermal sampling of atom motion, stochastic laser phase
+noise, Lindblad dynamics for single-atom excitation, and blockade-mediated
+two-qubit phase-gate simulations.
+"""
 module NeutralAtoms
 using Distributed
 
+using Markdown
 using Distributions, Random
 using PhysicalConstants.CODATA2018: c_0, k_B, m_u
 using Unitful
@@ -22,7 +33,7 @@ using Statistics
 export 
     w0_to_z0, trap_frequencies, E, I,
     release_recapture,
-    samples_generate, R, V, get_trap_params, H, samples_visualise,
+    samples_generate, R, V, get_trap_params, H,
     Sϕ, ϕ_amplitudes, ϕ,
     Ω_twophoton, T_twophoton, δ_twophoton, Ωr_required, 
     ket_0, ket_1, ket_r, ket_p, ket_l,

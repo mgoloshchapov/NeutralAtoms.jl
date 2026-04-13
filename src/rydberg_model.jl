@@ -6,6 +6,12 @@ const ket_r = nlevelstate(basis, 3);
 const ket_p = nlevelstate(basis, 4);
 const ket_l = nlevelstate(basis, 5);
 
+@doc "Computational ground state `|0⟩` in the package's five-level basis." ket_0
+@doc "Computational ground state `|1⟩` in the package's five-level basis." ket_1
+@doc "Target Rydberg state `|r⟩` in the package's five-level basis." ket_r
+@doc "Intermediate excited state `|p⟩` used by the two-photon model." ket_p
+@doc "Loss state `|l⟩` used to collect population outside the ideal manifold." ket_l
+
 #Operators
 const Id  = dense(identityoperator(basis));
 const σ0p = ket_0 ⊗ dagger(ket_p);
@@ -25,6 +31,14 @@ const σrl = ket_r ⊗ dagger(ket_l);
 const operators = [np, nr, σ1p, σp1, σpr, σrp];
 
 
+"""
+    get_atom_trajectories(sample, ωr, ωz, atom_motion, free_motion)
+
+Construct position and velocity trajectories for one sampled atom.
+
+The returned closures are used internally when assembling time-dependent
+Hamiltonians for single- and two-atom simulations.
+"""
 @inline function get_atom_trajectories(
     sample::Vector{Float64}, 
     ωr::Float64,
@@ -42,12 +56,27 @@ const operators = [np, nr, σ1p, σp1, σpr, σrp];
     return X, Y, Z, Vx, Vy, Vz;
 end
 
-#Due to atom dynamics
+"""
+    Ω_old(x, y, z, laser_params)
+
+Return the older single-Gaussian implementation of the position-dependent Rabi
+coupling.
+
+Prefer `Ω`, which also supports the flat-top beam parameterizations.
+"""
 @inline function Ω_old(x, y, z, laser_params)
     Ω0, w0, z0, θ, n = laser_params;
     return Ω0 .* A(x, y, z, w0, z0; n=n, θ=θ) .* A_phase(x, y, z, w0, z0; θ=θ);
 end;
 
+"""
+    Ω(x, y, z, laser_params)
+
+Return the position-dependent complex Rabi coupling for one excitation beam.
+
+Depending on `laser_params`, this helper evaluates either a Gaussian beam or one
+of the simple flat-top beam parameterizations used by the package.
+"""
 @inline function Ω(x, y, z, laser_params)
     if length(laser_params) == 5
         Ω0, w0, z0, θ, n = laser_params;
@@ -73,7 +102,12 @@ end;
     end;
 end;
 
-#Due to Doppler shift for red laser
+"""
+    Δ(vx, vz, laser_params)
+
+Return the single-photon Doppler shift induced by atomic motion for the red
+laser.
+"""
 @inline function Δ(vx, vz, laser_params)
     w0, z0, θ = laser_params[2:4]
     k = 2.0 * z0/w0^2;
@@ -83,7 +117,12 @@ end;
     return Δx + Δz
 end;
 
-#Due to Doppler shifts for red and blue lasers
+"""
+    δ(vx, vz, red_laser_params, blue_laser_params)
+
+Return the two-photon Doppler detuning induced by atomic motion for the red and
+blue excitation beams.
+"""
 @inline function δ(vx, vz, red_laser_params, blue_laser_params)
     wr0, zr0, θr = red_laser_params[2:4];
     wb0, zb0, θb = blue_laser_params[2:4];
@@ -99,6 +138,15 @@ end;
 
 ### Change operators
 #Two-photon Rydberg hamiltonian for 1 atom
+"""
+    Hamiltonian(Ωr, Ωb, Δ, δ)
+
+Construct the time-dependent single-atom Hamiltonian for the two-photon Rydberg
+model.
+
+This low-level helper expects callable coefficients. Most users should call
+`simulation`, which assembles these ingredients from `RydbergConfig`.
+"""
 function Hamiltonian(Ωr, Ωb, Δ, δ)
     return TimeDependentSum(
         [
@@ -122,13 +170,30 @@ function Hamiltonian(Ωr, Ωb, Δ, δ)
 end;
 
 
-#Jump operators for master equation 
+"""
+    JumpOperators(decay_params)
+
+Construct the Lindblad jump operators for the single-atom model.
+
+`decay_params` is ordered as `[Γ0, Γ1, Γl, Γr]`.
+"""
 @inline function JumpOperators(decay_params)
     Γ0, Γ1, Γl, Γr = decay_params;
     decay_operators = [sqrt(Γ0)*σ0p, sqrt(Γ1)*σ1p, sqrt(Γl)*σlp, sqrt(Γr)*σlr]
     return decay_operators
 end;
 
+"""
+    GenerateHamiltonian(sample, ωr, ωz, free_motion, atom_motion, laser_noise,
+        tspan_noise, f, red_laser_phase_amplitudes, blue_laser_phase_amplitudes,
+        nodes, red_laser_params, blue_laser_params, Δ0, δ0)
+
+Assemble the full time-dependent single-atom Hamiltonian for one Monte Carlo
+sample.
+
+This combines thermal motion, Doppler shifts, beam inhomogeneity, and optional
+laser phase noise into the effective two-photon model.
+"""
 @inline function GenerateHamiltonian(
     sample, 
     ωr, ωz,
@@ -191,6 +256,29 @@ end;
 end;
 
 
+"""
+    simulation(cfg::RydbergConfig; temperature_calibrate=false, ode_kwargs...)
+
+Simulate single-atom two-photon Rydberg excitation and average over Monte Carlo
+realizations.
+
+The model combines the mechanisms emphasized in
+[arXiv:1802.10424](https://arxiv.org/abs/1802.10424): finite-temperature atomic
+motion and Doppler dephasing, spontaneous emission from the intermediate and
+Rydberg states, and stochastic laser phase noise.
+
+# Arguments
+- `cfg::RydbergConfig`: simulation configuration.
+
+# Keywords
+- `temperature_calibrate = false`: if `true`, first adjust the ideal laser
+  parameters with `calibrate_two_photon`.
+- `ode_kwargs...`: keyword arguments forwarded to
+  `timeevolution.master_dynamic`.
+
+# Returns
+- `(ρ, ρ2)`, the first and second moments of the density-matrix trajectory.
+"""
 function simulation(
     cfg::RydbergConfig; 
     temperature_calibrate=false, 
@@ -264,24 +352,56 @@ function simulation(
     return ρ ./ cfg_t.n_samples, ρ2 ./ cfg_t.n_samples
 end;
 
-function Ω_twophoton(Ωr, Ωb, Δ)
+@doc doc"""
+    Ω_twophoton(Ωr, Ωb, Δ)
+
+Return the effective two-photon Rabi frequency
+
+```math
+\Omega_{\mathrm{2ph}} = \left| \frac{\Omega_r \Omega_b}{2 \Delta} \right|.
+```
+""" function Ω_twophoton(Ωr, Ωb, Δ)
     return abs(Ωb * Ωr / (2.0 * Δ))
 end;
 
-function T_twophoton(Ωr, Ωb, Δ)
+@doc doc"""
+    T_twophoton(Ωr, Ωb, Δ)
+
+Return the effective two-photon Rabi period `2π / Ω_twophoton(Ωr, Ωb, Δ)`.
+""" function T_twophoton(Ωr, Ωb, Δ)
     return 2.0*π / Ω_twophoton(Ωr, Ωb, Δ)
 end;
 
-function δ_twophoton(Ωr, Ωb, Δ)
+@doc doc"""
+    δ_twophoton(Ωr, Ωb, Δ)
+
+Return the differential AC Stark shift of the effective two-photon transition:
+
+```math
+\delta_{\mathrm{2ph}} = \frac{|\Omega_r|^2 - |\Omega_b|^2}{4 \Delta}.
+```
+""" function δ_twophoton(Ωr, Ωb, Δ)
     return (abs(Ωr)^2 - abs(Ωb)^2)/(4.0 * Δ)
 end;
 
-function Ωr_required(Ω, Ωb, Δ)
+@doc doc"""
+    Ωr_required(Ω, Ωb, Δ)
+
+Return the red-laser single-photon Rabi frequency needed to realize an effective
+two-photon coupling `Ω` with blue-laser coupling `Ωb` and detuning `Δ`.
+""" function Ωr_required(Ω, Ωb, Δ)
     return 2.0 * Δ * Ω / abs(Ωb)
 end;
 
+"""
+    calibrate_two_photon(cfg::RydbergConfig, n_samples=1000)
 
+Temperature-average the effective two-photon coupling and AC Stark shift, then
+return a corrected copy of `cfg`.
 
+This helper is useful when matching an ideal pulse design to a finite-temperature
+ensemble before running `simulation`.
+"""
 function calibrate_two_photon(cfg::RydbergConfig, n_samples=1000)
     cfg_calibrated = deepcopy(cfg)
     Ωr = cfg.red_laser_params[1]
@@ -308,15 +428,13 @@ end
 
 
 """
-    struct send_rho
-        r::Vector{Operator{NLevelBasis{Int64}, NLevelBasis{Int64}, Matrix{ComplexF64}}}
-    end
-    #function sum_for_MPI(A::Vector{Operator{NLevelBasis{Int64}, NLevelBasis{Int64}, Matrix{ComplexF64}}},     B::Vector{Operator{NLevelBasis{Int64}, NLevelBasis{Int64}, Matrix{ComplexF64}}})
-    function  sum_for_MPI(A::send_rho, B::send_rho)
-        ro = A.r .+ B.r
-        return send_rho(ro)
-    end
-    MPI.@RegisterOp(sum_for_MPI, send_rho)#T::Vector{Operator{NLevelBasis{Int64}, NLevelBasis{Int64}, Matrix{ComplexF64}}})
+    simulation_mpi(cfg::RydbergConfig)
+
+Experimental MPI-backed variant of `simulation`.
+
+This helper distributes trajectory averaging across MPI ranks. It is less mature
+than `simulation` and is best treated as an advanced path for large ensemble
+studies.
 """
 function simulation_mpi(cfg::RydbergConfig)
     samples = samples_generate(cfg.trap_params,
