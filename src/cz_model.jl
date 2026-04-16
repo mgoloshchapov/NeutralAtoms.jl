@@ -22,9 +22,9 @@ end
     ωr, ωz,
     free_motion, atom_motion,
     tspan_noise, f, nodes,
-    red_laser_phase_amplitudes, blue_laser_phase_amplitudes,
-    red_laser_params, blue_laser_params,
-    ϕr, ϕb,
+    first_laser_phase_amplitudes, second_laser_phase_amplitudes,
+    first_laser_params, second_laser_params,
+    ϕ_first, ϕ_sec,
     Δ0, δ0,
     c6)
 
@@ -38,26 +38,26 @@ end
         X, Y, Z, Vx, Vy, Vz = get_atom_trajectories(samples[i], ωr, ωz, atom_motion, free_motion);
 
         # Generate phase noise traces for red and blue lasers
-        ϕ_red_res  = ϕ(tspan_noise, f, red_laser_phase_amplitudes);
-        ϕ_blue_res = ϕ(tspan_noise, f, blue_laser_phase_amplitudes);
+        ϕ_red_res  = ϕ(tspan_noise, f, first_laser_phase_amplitudes);
+        ϕ_blue_res = ϕ(tspan_noise, f, second_laser_phase_amplitudes);
 
         # Interpolate phase noise traces to pass to hamiltonian
-        ϕ_red  = interpolate(nodes, ϕ_red_res, Gridded(Linear()));
-        ϕ_blue = interpolate(nodes, ϕ_blue_res, Gridded(Linear()));
+        ϕ_1  = interpolate(nodes, ϕ_red_res, Gridded(Linear()));
+        ϕ_2 = interpolate(nodes, ϕ_blue_res, Gridded(Linear()));
 
 
         # Hamiltonian params trajectories
-        Ωr = t -> exp(1.0im * (ϕ_red(t)  + ϕr(t))) * Ω(X(t), Y(t), Z(t), red_laser_params );
-        Ωb = t -> exp(1.0im * (ϕ_blue(t) + ϕb(t))) * Ω(X(t), Y(t), Z(t), blue_laser_params);
+        Ω1 = t -> exp(1.0im * (ϕ_1(t) + ϕ_first(t))) * Ω(X(t), Y(t), Z(t), first_laser_params );
+        Ω2 = t -> exp(1.0im * (ϕ_2(t) + ϕ_sec(t))) * Ω(X(t), Y(t), Z(t), second_laser_params);
 
         coefficients_two = [coefficients_two; 
             [
-                t -> Δ(Vx(t), Vz(t), red_laser_params) - Δ0,
-                t -> δ(Vx(t), Vz(t), red_laser_params, blue_laser_params) - δ0,
-                t -> Ωr(t)       / 2.0,
-                t -> conj(Ωr(t)) / 2.0,
-                t -> Ωb(t)       / 2.0,
-                t -> conj(Ωb(t)) / 2.0,
+                t -> Δ(Vx(t), Vz(t), first_laser_params) - Δ0,
+                t -> δ(Vx(t), Vz(t), first_laser_params, second_laser_params) - δ0,
+                t -> Ω1(t)       / 2.0,
+                t -> conj(Ω1(t)) / 2.0,
+                t -> Ω2(t)       / 2.0,
+                t -> conj(Ω2(t)) / 2.0,
             ]
         ];
     end;
@@ -102,7 +102,6 @@ function get_blockade_stark_shift_factor(
 
     return - Ω / (2.0 * c6 * Rm6)
 end
-   
 
 function simulation_czlp(
     cfg::CZLPConfig;
@@ -131,10 +130,10 @@ function simulation_czlp(
 
     tspan_noise = [0.0:cfg.tspan[end]/1000:cfg.tspan[end];];
     nodes = (tspan_noise, );
-    red_laser_phase_amplitudes  = cfg.laser_noise ? cfg.red_laser_phase_amplitudes  : zero(cfg.red_laser_phase_amplitudes);
-    blue_laser_phase_amplitudes = cfg.laser_noise ? cfg.blue_laser_phase_amplitudes : zero(cfg.blue_laser_phase_amplitudes);
-    ϕb = t -> 0.0;
-    ϕr = t -> t < τ ? 0.0 : cfg.ξ;
+    first_laser_phase_amplitudes  = cfg.laser_noise ? cfg.first_laser_phase_amplitudes  : zero(cfg.first_laser_phase_amplitudes);
+    second_laser_phase_amplitudes = cfg.laser_noise ? cfg.second_laser_phase_amplitudes : zero(cfg.second_laser_phase_amplitudes);
+    ϕ_sec = t -> 0.0;
+    ϕ_first = t -> t < τ ? 0.0 : cfg.ξ;
 
     Γ0, Γ1, Γl   = cfg.spontaneous_decay_intermediate ? cfg.decay_params[1:3] : zeros(3)
     Γr           = cfg.spontaneous_decay_rydberg      ? cfg.decay_params[4]   :  0.0
@@ -154,9 +153,9 @@ function simulation_czlp(
                 ωr, ωz,
                 cfg.free_motion, cfg.atom_motion,
                 tspan_noise, cfg.f, nodes,
-                red_laser_phase_amplitudes, blue_laser_phase_amplitudes,
-                cfg.red_laser_params, cfg.blue_laser_params,
-                ϕr, ϕb,
+                first_laser_phase_amplitudes, second_laser_phase_amplitudes,
+                cfg.first_laser_params, cfg.second_laser_params,
+                ϕ_first, ϕ_sec,
                 Δ0, δ0,
                 cfg.c6)
 
@@ -165,7 +164,6 @@ function simulation_czlp(
         ρ  .+= ρt
         ρ2 .+= ρt .^ 2
     end;
-
 
     return ρ ./ cfg.n_samples, ρ2 ./ cfg.n_samples;
 end

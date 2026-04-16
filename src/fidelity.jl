@@ -1,3 +1,46 @@
+function get_fidelity_with_rz_phi(ρ, state, ϕ_rz)
+    ones = ket_1 ⊗ ket_1
+    CZ = Id ⊗ Id - 2*(ones ⊗ dagger(ones));
+    state_tr = CZ * state
+    global_RZ = ϕ -> RZ(ϕ) ⊗ RZ(ϕ); 
+    
+    return real(dagger(state_tr) * global_RZ(ϕ_rz) * ρ * dagger( global_RZ(ϕ_rz)) * state_tr)
+end
+
+function CZ_calibration_by_fidelity_oscillation(cfg::CZLPConfig; ode_kwargs...)
+    cfg_parity = deepcopy(cfg)
+
+    ket_pos = (ket_0 + ket_1) / sqrt(2) #ket_ipos = (ket_0 + 1.0im * ket_1) / sqrt(2)
+    cfg_parity.ψ0 = ket_pos ⊗ ket_pos #ket_ipos ⊗ ket_pos
+    ρ = simulation_czlp(cfg_parity; ode_kwargs...)[1][end]
+
+    Had = Id ⊗ Hadamard # ρ1,2 .=  Had * ρ1,2 * dagger(Had)
+    Phi_p = (ket_0 ⊗ ket_0 + ket_1 ⊗ ket_1)/sqrt(2) #Phi_ip = (ket_0 ⊗ ket_0 + 1.0im * ket_1 ⊗ ket_1)/sqrt(2)
+
+    ϕ_list = [0.0:0.0001:2π;];
+    #global_RZ = ϕ -> RZ(ϕ) ⊗ RZ(ϕ);
+    #F_list = [real(dagger(Phi_p)  * Had * global_RZ(ϕ) * ρ1 * dagger(Had * global_RZ(ϕ)) * Phi_p) for ϕ in ϕ_list];
+    F_list = [ get_fidelity_with_rz_phi(ρ, Had * Phi_p, ϕ) for ϕ in ϕ_list];
+
+    #use plot(ϕ_list, F_list) in notebook
+    return ϕ_list, F_list, ϕ_list[argmax(F_list)]
+end
+
+function get_parity_osc(ρ, ϕ_cal)
+    S_ZZ = Z ⊗ Z;
+
+    ϕ_list =  [0.0:0.001:2π;]; #-ϕ1 .+ π/2 .+
+    global_RZ = ϕ -> RZ(ϕ) ⊗ RZ(ϕ); #Had * global_RZ(ϕ) * ρ * dagger(Had * global_RZ(ϕ)) #(Phi_p ⊗ dagger(Phi_p))
+    global_RX = x -> RX(x) ⊗ RX(x);
+
+    θ = ϕ_cal; # - cfg_parity.ϕ_RZ + ϕ_cal - π
+    U = a -> global_RX(π/2) * global_RZ(a) * global_RX(5*π/4)
+
+    Par_list = [real(expect(S_ZZ , U(ϕ) * (θ) * ρ * dagger(U(ϕ) * global_RZ(θ)) ) ) for ϕ in ϕ_list];
+    #use plot(ϕ_list, Par_list) in notebook 
+    return ϕ_list, Par_list 
+end 
+
 basis_fidelity_states = [
     ket_0, 
     ket_1,
@@ -7,13 +50,12 @@ basis_fidelity_states = [
     (ket_0 - 1.0im * ket_1)/sqrt(2)
     ]
 
-
 function get_rydberg_fidelity_configs(cfg, n_samples=20)
     configs = OrderedDict()
 
     # Config to measure error from intermediate state decay
     cfg_t = deepcopy(cfg)
-    cfg_t.atom_params[2] = 1.0
+    cfg_t.atom_params[2] = 0.1
     cfg_t.spontaneous_decay_intermediate = true
     cfg_t.spontaneous_decay_rydberg      = false
     cfg_t.laser_noise = false
@@ -23,7 +65,7 @@ function get_rydberg_fidelity_configs(cfg, n_samples=20)
 
     # Config to measure error from rydberg state decay
     cfg_t = deepcopy(cfg)
-    cfg_t.atom_params[2] = 1.0
+    cfg_t.atom_params[2] = 0.1
     cfg_t.spontaneous_decay_intermediate = false
     cfg_t.spontaneous_decay_rydberg      = true
     cfg_t.laser_noise = false
@@ -33,7 +75,7 @@ function get_rydberg_fidelity_configs(cfg, n_samples=20)
 
     # Config to measure error from laser_noise
     cfg_t = deepcopy(cfg)
-    cfg_t.atom_params[2] = 1.0
+    cfg_t.atom_params[2] = 0.1
     cfg_t.spontaneous_decay_intermediate = false
     cfg_t.spontaneous_decay_rydberg = false
     cfg_t.laser_noise = true
@@ -50,7 +92,6 @@ function get_rydberg_fidelity_configs(cfg, n_samples=20)
     cfg_t.n_samples = n_samples
     configs["Atom motion"] = cfg_t
 
-
     # Config to measure total error
     cfg_t = deepcopy(cfg)
     cfg_t.spontaneous_decay_intermediate = true
@@ -62,7 +103,6 @@ function get_rydberg_fidelity_configs(cfg, n_samples=20)
 
     return configs
 end 
-
 
 function get_rydberg_infidelity(
     cfg::RydbergConfig;
@@ -94,151 +134,6 @@ function get_rydberg_infidelity(
     return infidelities
 end
 
-
-function plot_rydberg_infidelity(
-    infidelities; 
-    dir_name="/Users/goloshch/ColdAtoms_test/experiments/23_07_2025/results/", 
-    file_name="plot.png",
-    title="Error budget for 2π pulse",
-    blue=true)
-
-    red_color  = RGBA(207.0/255, 71.0/255, 80.0/255, 1.0)
-    blue_color = RGBA(135.0/255,203.0/255,230.0/255,1.0)
-    if blue
-        color = blue_color 
-    else 
-        color = red_color
-    end
-
-    keys_iF   = collect(keys(infidelities))
-    keys_ordered = [
-        "Total", 
-        "Atom motion", 
-        "Intermdeiate state decay", 
-        "Rydberg state decay",
-        "Laser noise"
-        ]
-
-    keys_final = [key for key in keys_ordered if key in keys_iF]
-    values_final = [100*infidelities[key] for key in keys_ordered if key in keys_iF]
-
-    p = bar(keys_final, values_final;
-    xrotation=45,
-    margin=10Plots.mm,
-    ylabel="Infidelity, %", 
-    title=title,
-    label=nothing,
-    dpi=300,
-    size=(600, 600),
-    xguidefontsize = 14,
-    yguidefontsize = 14,
-    xtickfontsize = 14,
-    ytickfontsize = 14,
-    color=color
-    )
-
-    savefig("$(dir_name)$(file_name)")
-
-    display(p)
-
-    return keys_final, values_final
-end
-
-function get_parity_fidelity(cfg::CZLPConfig; ode_kwargs...)
-    cfg_parity = deepcopy(cfg)
-
-    ket_pos = (ket_0 + ket_1) / sqrt(2)
-    ket_ipos = (ket_0 + 1.0im * ket_1) / sqrt(2)
-
-
-    cfg_parity.ψ0 = ket_pos ⊗ ket_pos
-    ρ1 = simulation_czlp(cfg_parity; ode_kwargs...)[1][end]
-    # cfg_parity.ψ0 = ket_ipos ⊗ ket_pos
-    # ρ2 = simulation_czlp(cfg_parity; ode_kwargs...)[1][end]
-
-    Had = Id ⊗ Hadamard
-    # ρ1 .=  Had * ρ1 * dagger(Had)
-    # ρ2 .=  Had * ρ2 * dagger(Had)
-
-    Phi_p = (ket_0 ⊗ ket_0 + ket_1 ⊗ ket_1)/sqrt(2)
-    Phi_ip = (ket_0 ⊗ ket_0 + 1.0im * ket_1 ⊗ ket_1)/sqrt(2)
-
-    ϕ_list = [0.0:0.0001:2π;];
-    global_RZ = ϕ -> RZ(ϕ) ⊗ RZ(ϕ);
-
-    F_list_1 = [real(dagger(Phi_p)  * Had * global_RZ(ϕ) * ρ1 * dagger(Had * global_RZ(ϕ)) * Phi_p) for ϕ in ϕ_list];
-    # F_list_2 = [real(dagger(Phi_ip) * Had * global_RZ(ϕ) * ρ2 * dagger(Had * global_RZ(ϕ)) * Phi_ip) for ϕ in ϕ_list];
-
-    # plot(ϕ_list, [F_list_1, F_list_2])
-    plot(ϕ_list, F_list_1)
-    return ϕ_list, F_list_1, ϕ_list[argmax(F_list_1)]
-    # return ϕ_list, F_list_1, F_list_2, ϕ_list[argmax(F_list_1)]
-end
-
-function get_parity(cfg::CZLPConfig, ϕ_cal; ode_kwargs...)
-    cfg_parity = deepcopy(cfg)
-    ket_ineg = (ket_0 - 1.0im * ket_1) / sqrt(2) #ket_pos = (ket_0 + ket_1) / sqrt(2)
-    S_ZZ = Z ⊗ Z;
-
-    cfg_parity.ψ0 = ket_ineg ⊗ ket_ineg #ket_pos ⊗ ket_pos
-    ρ1 = simulation_czlp(cfg_parity; ode_kwargs...)[1][end] #    Had = Id ⊗ Hadamard
-
-    ϕ_list =  [0.0:0.001:2π;]; #-ϕ1 .+ π/2 .+
-    global_RZ = ϕ -> RZ(ϕ) ⊗ RZ(ϕ); #Had * global_RZ(ϕ) * ρ1 * dagger(Had * global_RZ(ϕ)) #(Phi_p ⊗ dagger(Phi_p))
-    global_RX = x -> RX(x) ⊗ RX(x);
-    θ = - cfg_parity.ϕ_RZ + ϕ_cal - π
-    U = a -> global_RX(π/2) * global_RZ(a) * global_RX(5*π/4)
-
-    Par_list = [real(expect(S_ZZ , U(ϕ) * global_RZ(θ) * ρ1 * dagger(U(ϕ) * global_RZ(θ)) ) ) for ϕ in ϕ_list];
-    plot(ϕ_list, Par_list)
-    return ϕ_list, Par_list #, ϕ_list[argmax(Par_list)]
-end
-
-
-function get_fidelity_osc(ρ, state)
-    Had = Id ⊗ Hadamard
-    ones = ket_1 ⊗ ket_1
-    CZ = Id ⊗ Id - 2*(ones ⊗ dagger(ones));
-    state_tr = CZ * state
-
-    ϕ_list = [0.0:0.001:2π;];
-    global_RZ = ϕ -> RZ(ϕ) ⊗ RZ(ϕ); 
-    #F_list = [real(dagger(state)  * Had * global_RZ(ϕ) * ρ * dagger(Had * global_RZ(ϕ)) * state) for ϕ in ϕ_list];
-    F_list = [real(dagger(state_tr) * global_RZ(ϕ) * ρ * dagger( global_RZ(ϕ)) * state_tr) for ϕ in ϕ_list];
-    #plot(ϕ_list, F_list_1)
-    return ϕ_list, F_list, ϕ_list[argmax(F_list)]
-end
-
-function get_parity_osc(ρ, ϕ_cal)
-    S_ZZ = Z ⊗ Z;
-
-    ϕ_list =  [0.0:0.001:2π;]; #-ϕ1 .+ π/2 .+
-    global_RZ = ϕ -> RZ(ϕ) ⊗ RZ(ϕ); #Had * global_RZ(ϕ) * ρ1 * dagger(Had * global_RZ(ϕ)) #(Phi_p ⊗ dagger(Phi_p))
-    global_RX = x -> RX(x) ⊗ RX(x);
-
-    θ = ϕ_cal; # - cfg_parity.ϕ_RZ + ϕ_cal - π
-    U = a -> global_RX(π/2) * global_RZ(a) * global_RX(5*π/4)
-
-    Par_list = [real(expect(S_ZZ , U(ϕ) * global_RZ(θ) * ρ * dagger(U(ϕ) * global_RZ(θ)) ) ) for ϕ in ϕ_list];
-    plot(ϕ_list, Par_list)
-    return ϕ_list, Par_list #, ϕ_list[argmax(Par_list)]
-end
-
-#unused
-function get_parity_fidelity_temp(ρ, ϕ_RZ)
-    Had = Id ⊗ Hadamard
-
-    global_RZ = RZ(ϕ_RZ) ⊗ RZ(ϕ_RZ);
-    ρt = global_RZ * ρ * dagger(global_RZ);
-    ρt = Had * ρt * dagger(Had)
-
-    Phi_p = (ket_0 ⊗ ket_0 + ket_1 ⊗ ket_1)/sqrt(2)
-
-    F = real(dagger(Phi_p) * ρt * Phi_p)
-    return F, ρt
-end
-
-
 function get_cz_infidelity(
     cfg::CZLPConfig;
     n_samples=1,
@@ -256,7 +151,7 @@ function get_cz_infidelity(
     cfg_t.spontaneous_decay_intermediate    = false
     cfg_t.spontaneous_decay_rydberg         = false
     cfg_t.laser_noise                       = false
-    cfg_t.atom_params[2]                    = 1.0
+    cfg_t.atom_params[2]                    = 0.1
     cfg_t.n_samples                         = 1
 
     println("Measuring error from calibration...")
@@ -286,43 +181,4 @@ function get_cz_infidelity(
     end
 
     return infidelities, calibration_error
-end
-
-function plot_cz_infidelity(infidelities;
-    dir_name="/Users/goloshch/ColdAtoms_test/experiments/23_07_2025/results/", 
-    file_name="plot_cz.png",
-    title="Error budget for 2π pulse")
-
-    keys_iF   = collect(keys(infidelities))
-    keys_ordered = [
-        "Total", 
-        "Atom motion", 
-        "Intermdeiate state decay", 
-        "Rydberg state decay",
-        "Laser noise"
-        ]
-
-    keys_final = [key for key in keys_ordered if key in keys_iF]
-    values_final = [100*infidelities[key] for key in keys_ordered if key in keys_iF]
-
-    p = bar(keys_final, values_final;
-    xrotation=45,
-    margin=10Plots.mm,
-    ylabel="Infidelity, %", 
-    title=title,
-    label=nothing,
-    dpi=300,
-    size=(600, 600),
-    xguidefontsize = 14,
-    yguidefontsize = 14,
-    xtickfontsize = 14,
-    ytickfontsize = 14,
-    color=RGBA(135.0/255,203.0/255,230.0/255,1.0)
-    )
-
-    savefig("$(dir_name)$(file_name)")
-
-    display(p)
-
-    return keys_final, values_final
 end

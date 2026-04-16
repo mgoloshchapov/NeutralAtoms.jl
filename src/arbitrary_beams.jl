@@ -33,16 +33,28 @@ end
 function HG_coeff(k,n)
     res = 0.0
     for i in k:n
-        res += factorial(2*i) / (factorial(i) * 2^(3*i) * factorial(i - k) * factorial(2*k))
+        #res += factorial(2*i) / (factorial(i) * 2^(3*i) * factorial(i - k) * factorial(2*k)) # short and fast but not accurate version for n>14
+        
+        tmp = 1 #/ (factorial(i)) #- k)
+        for j in (k+1):i
+            tmp *= (2*j*(2*j-1)) / ((j-k)) # * 2^3) # * factorial(i - k) ) #* factorial(2*k))
+        end
+        for j in 1:i
+            tmp /= (j * 2^3) 
+        end
+        res += tmp 
     end;
     return res
-end
+end 
 
 function HG_coefficients(p,q)
-    c = zeros(p,q)
-    for i in 1:p
-        for j in 1:q
-            c[i,j] =  HG_coeff(i, p-1) * HG_coeff(j, q-1)
+    c = zeros(p+1,q+1)
+    r=trunc(Int,p/2)
+    s=trunc(Int,q/2)
+    
+    for i in 0:r
+        for j in 0:s
+            c[2*i+1,2*j+1] =  HG_coeff(i, r) * HG_coeff(j, s)
         end;
     end;
     return c
@@ -82,7 +94,7 @@ function simple_flattopLG_field(x,y,z,laser_params)
     return Ω .* w0 ./ w .* exp.(-1.0im * phase0) * E_sum
 end
 
-function decomposition_2d(x::Vector{Float64}, y::Vector{Float64}, F::Vector{Float64},
+function decomposition_HG_2d(x::Vector{Float64}, y::Vector{Float64}, F::Vector{Float64},
                          w::Float64, dx::Float64, dy::Float64; n_max=20, m_max=20)
     c = zeros(n_max+1, m_max+1); #m_max
     for n in 0:n_max
@@ -123,3 +135,6 @@ function reconstruct_HG_field_2d(x::Float64,y::Float64,z::Float64, Ω_w_z::Vecto
     end;
     return Ω * w0 / w * E_sum * exp(-1.0im * phase0) * eiz
 end;
+
+#function decomposition_IG(x::Vector{Float64}, y::Vector{Float64}, F::Vector{Float64}, w::Float64, dx::Float64, dy::Float64; n_max=20, m_max=20)
+#function reconstruct_IG_field(x::Float64,y::Float64,z::Float64, Ω_w_z::Vector{Float64}, coeffs::Matrix{Float64}) 

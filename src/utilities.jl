@@ -22,14 +22,12 @@ function w0_to_z0(w0, λ, M2=1.0)
     return π*w0^2/λ / M2;
 end;
 
-
 #Amplitude of gaussian beam with |E0|=1
 function A(x, y, z, w0, z0; n=1, θ=0.0)
     xt, yt, zt = sqrt(x^2 + y^2), 0.0, z 
     xt, zt = xt*cos(θ)-zt*sin(θ), xt*sin(θ) + zt*cos(θ)
     return (w0 ./ w(zt, w0, z0)) .* exp.(- ((xt .^2 .+ yt .^2) ./ (w(zt, w0, z0) .^2)) .^ n)
 end;
-
 
 #Intensity of gaussian beam with |E0|=1
 function I(x, y, z, w0, z0; n=1, θ=0.0)
@@ -38,7 +36,6 @@ function I(x, y, z, w0, z0; n=1, θ=0.0)
     return ((w0 ./ w(zt, w0, z0)) .* exp.(-((xt .^2 .+ yt .^2) ./ (w(zt, w0, z0) .^2)).^n)) .^2
 end;
 
-
 #Phase of gaussian beam
 function A_phase(x, y, z, w0, z0; θ=0.0)
     xt, yt, zt = sqrt(x^2 + y^2), 0.0, z 
@@ -46,8 +43,6 @@ function A_phase(x, y, z, w0, z0; θ=0.0)
     k = 2.0 * z0 / w0^2;
     return exp.(-1.0im * k * zt .* (0.5*(xt .^2 + yt .^ 2) ./ (zt .^2  + z0 .^2)) + 1.0im * atan.(zt ./ z0));
 end;
-
-
 
 #Complex amplitude of gaussian beam with |E0|=1
 function E(x, y, z, w0, z0;n=1, θ=0.0)
@@ -161,8 +156,6 @@ function plot_two_qubit_probs(tspan, probs_dict)
     display(plt)
 end
 
-
-
 # function calibrate_rabi(trap_params, atom_params, laser_params; n_samples=1000)
 #     Ω, w, z, θ, n = laser_params
 #     samples = samples_generate(trap_params, atom_params, n_samples)[1]
@@ -174,7 +167,6 @@ end
 # end
 
 
-
 mutable struct RydbergConfig
     tspan::Vector{Float64}
     ψ0::Ket{NLevelBasis{Int64}, Vector{ComplexF64}}
@@ -184,11 +176,12 @@ mutable struct RydbergConfig
     n_samples::Int64
 
     f::Vector{Float64}
-    red_laser_phase_amplitudes::Vector{Float64}
-    blue_laser_phase_amplitudes::Vector{Float64}
+    first_laser_phase_amplitudes::Vector{Float64}
+    second_laser_phase_amplitudes::Vector{Float64}
     
-    red_laser_params::Dict{String, Any}#Vector{Float64}
-    blue_laser_params::Dict{String, Any}#Vector{Float64}
+    first_laser_params::Dict{String, Any}#Vector{Float64}
+    second_laser_params::Dict{String, Any}#Vector{Float64}
+    shift::Vector{Float64}
     
     detuning_params::Vector{Float64}
     decay_params::Vector{Float64}
@@ -198,6 +191,7 @@ mutable struct RydbergConfig
     laser_noise::Bool
     spontaneous_decay_intermediate::Bool
     spontaneous_decay_rydberg::Bool
+    #error_options::Dict{String, Any}
 end
 
 
@@ -210,11 +204,11 @@ mutable struct CZLPConfig
     n_samples::Int64
 
     f::Vector{Float64}
-    red_laser_phase_amplitudes::Vector{Float64}
-    blue_laser_phase_amplitudes::Vector{Float64}
+    first_laser_phase_amplitudes::Vector{Float64}
+    second_laser_phase_amplitudes::Vector{Float64}
     
-    red_laser_params::Dict{String, Any}#Vector{Float64}
-    blue_laser_params::Dict{String, Any}#Vector{Float64}
+    first_laser_params::Dict{String, Any}#Vector{Float64}
+    second_laser_params::Dict{String, Any}#Vector{Float64}
     
     detuning_params::Vector{Float64}
     decay_params::Vector{Float64}

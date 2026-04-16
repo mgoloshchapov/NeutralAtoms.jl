@@ -4,5 +4,4 @@ docs/build/
 docs/Manifest.toml
 .vscode
 notebooks
-params
 results
