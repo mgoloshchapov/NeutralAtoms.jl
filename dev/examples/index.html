@@ -1,140 +1,79 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Examples · NeutralAtoms.jl</title><meta name="title" content="Examples · NeutralAtoms.jl"/><meta property="og:title" content="Examples · NeutralAtoms.jl"/><meta property="twitter:title" content="Examples · NeutralAtoms.jl"/><meta name="description" content="Documentation for NeutralAtoms.jl."/><meta property="og:description" content="Documentation for NeutralAtoms.jl."/><meta property="twitter:description" content="Documentation for NeutralAtoms.jl."/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><link href="../assets/logo.ico" rel="icon" type="image/x-icon"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../"><img src="../assets/logo.svg" alt="NeutralAtoms.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../">NeutralAtoms.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li class="is-active"><a class="tocitem" href>Examples</a><ul class="internal"><li><a class="tocitem" href="#Release-And-Recapture"><span>Release And Recapture</span></a></li><li><a class="tocitem" href="#Single-Atom-Two-Photon-Rydberg-Excitation"><span>Single-Atom Two-Photon Rydberg Excitation</span></a></li><li><a class="tocitem" href="#Blockade-Mediated-Controlled-Phase-Simulation"><span>Blockade-Mediated Controlled-Phase Simulation</span></a></li></ul></li><li><a class="tocitem" href="../library/">API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Examples</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Examples</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/mgoloshchapov/NeutralAtoms.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/mgoloshchapov/NeutralAtoms.jl/blob/main/docs/src/examples.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Examples"><a class="docs-heading-anchor" href="#Examples">Examples</a><a id="Examples-1"></a><a class="docs-heading-anchor-permalink" href="#Examples" title="Permalink"></a></h1><p>The package is easiest to understand in the same order as a neutral-atom experiment: characterize the trap, infer temperature, model single-atom Rydberg excitation, and finally move to blockade-mediated two-qubit dynamics.</p><h2 id="Release-And-Recapture"><a class="docs-heading-anchor" href="#Release-And-Recapture">Release And Recapture</a><a id="Release-And-Recapture-1"></a><a class="docs-heading-anchor-permalink" href="#Release-And-Recapture" title="Permalink"></a></h2><p>Release-and-recapture is the natural starting point because the inferred atom temperature feeds directly into the motion-sensitive Rydberg simulations.</p><pre><code class="language-julia hljs">using NeutralAtoms
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Examples · NeutralAtoms.jl</title><meta name="title" content="Examples · NeutralAtoms.jl"/><meta property="og:title" content="Examples · NeutralAtoms.jl"/><meta property="twitter:title" content="Examples · NeutralAtoms.jl"/><meta name="description" content="Documentation for NeutralAtoms.jl."/><meta property="og:description" content="Documentation for NeutralAtoms.jl."/><meta property="twitter:description" content="Documentation for NeutralAtoms.jl."/><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../search_index.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script><link href="../assets/logo.ico" rel="icon" type="image/x-icon"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../"><img src="../assets/logo.svg" alt="NeutralAtoms.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../">NeutralAtoms.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li class="is-active"><a class="tocitem" href>Examples</a><ul class="internal"><li><a class="tocitem" href="#Release-and-recapture-experiment"><span>Release and recapture experiment</span></a></li><li><a class="tocitem" href="#Two-photon-Rydberg-excitation"><span>Two-photon Rydberg excitation</span></a></li></ul></li><li><a class="tocitem" href="../library/">API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Examples</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Examples</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/mgoloshchapov/NeutralAtoms.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/mgoloshchapov/NeutralAtoms.jl/blob/main/docs/src/examples.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Examples"><a class="docs-heading-anchor" href="#Examples">Examples</a><a id="Examples-1"></a><a class="docs-heading-anchor-permalink" href="#Examples" title="Permalink"></a></h1><h2 id="Release-and-recapture-experiment"><a class="docs-heading-anchor" href="#Release-and-recapture-experiment">Release and recapture experiment</a><a id="Release-and-recapture-experiment-1"></a><a class="docs-heading-anchor-permalink" href="#Release-and-recapture-experiment" title="Permalink"></a></h2><p>Release and recapture method is used to measure temperature of single neutral atom in optical trap formed by gaussian beam.</p><p>The trap is turned off by a variable amount of time and probability to recapture atom is measured. If we know atom mass and trap parameters, we can extract atom temperature by comparing experimental release and recapture curve with the modelling.</p><pre><code class="language-julia hljs">using NeutralAtoms
 using Plots
-using Random
 
-Random.seed!(1234)
+# Atom and trap parameters
+U0, w0, λ, M2 = 1000.0, 1.1, 0.852, 1.3;
+z0 = w0_to_z0(w0, λ, M2);
+m, T = 86.9091835, 50.0;
+trap_params = [U0, w0, z0];
+atom_params = [m, T];
 
-U0 = 1000.0
-w0 = 1.1
-λ_trap = 0.852
-z0 = w0_to_z0(w0, λ_trap, 1.3)
+# Simulation parameters
+tspan = [0.0:1.0:50.0;];
+N = 10000
 
-atom_params = [86.9091835, 35.0]
-trap_params = [U0, w0, z0]
-tspan = collect(0.0:2.0:40.0)
-
-recapture, acc_rate = release_recapture(
+# Calculate recapture probabilities
+probs, acc_rate = release_recapture(
     tspan,
     trap_params,
     atom_params,
-    250;
-    harmonic = true,
-)
+    N;
+    harmonic=false);
 
-plot(tspan, recapture; lw = 3, label = &quot;recapture&quot;)
-xlabel!(&quot;Release time (μs)&quot;)
-ylabel!(&quot;Recapture probability&quot;)
-title!(&quot;Release-and-recapture curve&quot;)</code></pre><img src="c673d8df.svg" alt="Example block output"/><p><code>harmonic = true</code> is the fast approximation for documentation and quick scans. For full-temperature studies in the Gaussian trap potential, switch to <code>harmonic = false</code>.</p><h2 id="Single-Atom-Two-Photon-Rydberg-Excitation"><a class="docs-heading-anchor" href="#Single-Atom-Two-Photon-Rydberg-Excitation">Single-Atom Two-Photon Rydberg Excitation</a><a id="Single-Atom-Two-Photon-Rydberg-Excitation-1"></a><a class="docs-heading-anchor-permalink" href="#Single-Atom-Two-Photon-Rydberg-Excitation" title="Permalink"></a></h2><p>The single-atom model follows the error mechanisms emphasized in <a href="https://arxiv.org/abs/1802.10424">de Léséleuc et al. (2018)</a>: thermal motion and Doppler shifts, spontaneous emission, and laser phase noise.</p><pre><code class="language-julia hljs">using NeutralAtoms
+# Plot release and recapture curve
+plot(tspan, probs, label=false, width=3, color=&quot;red&quot;)
+xlims!(0.0, 50.0)
+ylims!(0.0, 1.05)
+xlabel!(&quot;Time, μs&quot;)
+ylabel!(&quot;Recapture probability&quot;)</code></pre><img src="87a4f422.svg" alt="Example block output"/><h2 id="Two-photon-Rydberg-excitation"><a class="docs-heading-anchor" href="#Two-photon-Rydberg-excitation">Two-photon Rydberg excitation</a><a id="Two-photon-Rydberg-excitation-1"></a><a class="docs-heading-anchor-permalink" href="#Two-photon-Rydberg-excitation" title="Permalink"></a></h2><p>Two-photon Rydberg excitation is used, for example, to implement native CZ gate on neutral atom quantum computers. Here we implement modelling of two-photon Rydberg excitation with different sources of decoherence: atom dynamics, laser phase noise, spontaneous decay from intermediate state.</p><p>Import necessary modules and specify atom and trap parameters.</p><pre><code class="language-julia hljs">using NeutralAtoms
 using QuantumOptics
 using Plots
-using Random
 
-Random.seed!(1234)
 
-atom_params = [86.9091835, 35.0]
-trap_params = [1000.0, 1.1, w0_to_z0(1.1, 0.813, 1.3)]
+m = 86.9091835;
+T = 50.0;
+U0 = 1000.0;
+w0 = 1.1;
+λ0 = 0.813;
+M2 = 1.3;
+z0 = w0_to_z0(w0, λ0, M2);
+atom_params = [m, T];
+trap_params = [U0, w0, z0];</code></pre><p>Let&#39;s now define parameters of laser phase noise. The model for realistic laser phase noise is decribed in <a href="https://arxiv.org/abs/2210.11007">this article</a> and consists of white noise and two servo bumps. The spectral density is described as</p><p class="math-container">\[\begin{aligned}
+    S_{\delta \nu}(f) = h_{0} &amp;+ h_{g1}\exp\left(-\frac{(f-f_{g1})^2}{2\sigma_{g1}^2} \right) + h_{g1}\exp\left(-\frac{(f+f_{g1})^2}{2\sigma_{g1}^2} \right) \\
+    &amp;+ h_{g2}\exp\left(-\frac{(f-f_{g2})^2}{2\sigma_{g2}^2} \right) + h_{g2}\exp\left(-\frac{(f+f_{g2})^2}{2\sigma_{g2}^2} \right).
+\end{aligned}\]</p><p>After the phase noise spectral density is defined and transformed to <span>$S_{\phi} = S_{\delta \nu}/f^{2}$</span>, we can sample laser phase noise trajectories as</p><p class="math-container">\[\phi(t) = \sum_{i} 2\sqrt{S_{\phi}(f_{i})\Delta f}\cos\left(2\pi f_{i} t + \varphi_{i}\right),\]</p><p>where phases <span>$\varphi_{i}$</span> are sampled from <span>$U[0,2\pi]$</span>.</p><pre><code class="language-julia hljs">h0 = 13.0 * 1e-6;    #MHz^2/MHz
+hg1 = 25.0 * 1e-6;   #MHz^2/MHz
+hg2 = 10.0e3 * 1e-6; #MHz^2/MHz
+fg1 = 130.0 * 1e-3;  #MHz
+fg2 = 234.0 * 1e-3;  #MHz
+σg1 = 18.0 * 1e-3;   #MHz
+σg2 = 1.5 * 1e-3;    #MHz
 
-f = collect(0.02:0.02:0.20)
-phase_params = [1.0e-6, [3.0e-6], [0.02], [0.10]]
-red_phase_amplitudes = ϕ_amplitudes(f, phase_params)
-blue_phase_amplitudes = ϕ_amplitudes(f, phase_params)
+red_laser_phase_params  = [h0, [hg1, hg2], [σg1, σg2], [fg1, fg2]];
+blue_laser_phase_params = [h0, [hg1, hg2], [σg1, σg2], [fg1, fg2]];
+f = [0.01:0.0025:1.0;];
+red_laser_phase_amplitudes = ϕ_amplitudes(f, red_laser_phase_params);
+blue_laser_phase_amplitudes = ϕ_amplitudes(f, blue_laser_phase_params);</code></pre><p>Here we define parameters of excitation beams, detunings and decay parameters.</p><pre><code class="language-julia hljs">#Excitation beam parameters
+λr = 0.795;
+λb = 0.475;
+wr = 10.0;
+wb = 3.5;
+zr = w0_to_z0(wr, λr);
+zb = w0_to_z0(wr, λb);
 
-wr = 10.0
-wb = 3.5
-zr = w0_to_z0(wr, 0.795)
-zb = w0_to_z0(wb, 0.475)
-Ωr = 2π * 8.0
-Ωb = 2π * 8.0
-Δ0 = 2π * 250.0
+#Rabi frequencies
+Δ0 = 2.0*π * 904.0;
+Ωr = 2π * 60.0;
+Ωb = 2π * 60.0;
+blue_laser_params = [Ωb, wb, zb];
+red_laser_params = [Ωr, wr, zr];</code></pre><pre><code class="language-julia hljs"># Detunings and decay params
+detuning_params = [Δ0, δ_twophoton(Ωr, Ωb, Δ0)];
+Γ = 2.0*π * 6.0;
+decay_params = [Γ/4, 3*Γ/4];</code></pre><p>Now let&#39;s define simulation time and draw samples of single atom in optical trap using Metropolis sampler.</p><pre><code class="language-julia hljs"># Period of Rabi oscillations
+T0 = T_twophoton(Ωr, Ωb, Δ0);
+tspan = [0.0:T0/30:2.5*T0;];
 
-red_laser_params = [Ωr, wr, zr, 0.0, 1.0]
-blue_laser_params = [Ωb, wb, zb, 0.0, 1.0]
-detuning_params = [Δ0, δ_twophoton(Ωr, Ωb, Δ0)]
-decay_params = [2π * 1.0, 2π * 1.0, 0.0, 0.0]
-tspan = collect(0.0:0.05:T_twophoton(Ωr, Ωb, Δ0))
-
-cfg = RydbergConfig(
-    tspan,
-    ket_1,
-    atom_params,
-    trap_params,
-    2,
-    f,
-    red_phase_amplitudes,
-    blue_phase_amplitudes,
-    red_laser_params,
-    blue_laser_params,
-    detuning_params,
-    decay_params,
-    true,
-    true,
-    true,
-    true,
-    false,
-)
-
-ρ, ρ2 = simulation(cfg; reltol = 1.0e-6, abstol = 1.0e-8)
-rydberg_probs = get_rydberg_probs(ρ, ρ2)
-plot_rydberg_probs(tspan, rydberg_probs)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">0.0%┣                                                ┫ 0/2 [00:00&lt;00:00, -0s/it]
-50.0%┣█████████████████████▌                     ┫ 1/2 [00:07&lt;Inf:Inf, InfGs/it]
-100.0%┣███████████████████████████████████████████████┫ 2/2 [00:08&lt;00:00, 8s/it]
-100.0%┣███████████████████████████████████████████████┫ 2/2 [00:08&lt;00:00, 8s/it]</code></pre><p>Key points in this workflow:</p><ul><li><code>samples_generate</code>, <code>R</code>, and <code>V</code> encode finite-temperature motion.</li><li><code>Δ</code> and <code>δ</code> convert that motion into one- and two-photon Doppler detunings.</li><li><code>Sϕ</code>, <code>ϕ_amplitudes</code>, and <code>ϕ</code> create stochastic phase-noise trajectories.</li><li><code>simulation</code> averages the master-equation dynamics over those realizations.</li></ul><h2 id="Blockade-Mediated-Controlled-Phase-Simulation"><a class="docs-heading-anchor" href="#Blockade-Mediated-Controlled-Phase-Simulation">Blockade-Mediated Controlled-Phase Simulation</a><a id="Blockade-Mediated-Controlled-Phase-Simulation-1"></a><a class="docs-heading-anchor-permalink" href="#Blockade-Mediated-Controlled-Phase-Simulation" title="Permalink"></a></h2><p>The two-qubit model is built around the global-pulse blockade protocol discussed in <a href="https://arxiv.org/abs/1908.06101">Levine et al. (2019)</a>. The key extra ingredients are the atom-pair geometry, the blockade interaction <code>c6 / R^6</code>, and the phase step <code>ξ</code> between the two Rydberg pulses.</p><pre><code class="language-julia hljs">using NeutralAtoms
-using QuantumOptics
-using Plots
-using Random
-
-Random.seed!(1234)
-
-atom_params = [86.9091835, 20.0]
-trap_params = [1000.0, 1.1, w0_to_z0(1.1, 0.813, 1.3)]
-
-f = collect(0.02:0.02:0.20)
-zero_noise = zeros(length(f))
-
-wr = 10.0
-wb = 3.5
-zr = w0_to_z0(wr, 0.795)
-zb = w0_to_z0(wb, 0.475)
-Ωr = 2π * 6.0
-Ωb = 2π * 6.0
-Δ0 = 2π * 200.0
-
-red_laser_params = [Ωr, wr, zr, 0.0, 1.0]
-blue_laser_params = [Ωb, wb, zb, 0.0, 1.0]
-detuning_params = [Δ0, δ_twophoton(Ωr, Ωb, Δ0)]
-decay_params = [2π * 0.5, 2π * 0.5, 0.0, 0.0]
-ket_plus = (ket_0 + ket_1) / sqrt(2)
-tspan = collect(0.0:0.05:0.20)
-
-cz_cfg = CZLPConfig(
-    tspan,
-    ket_plus ⊗ ket_plus,
-    atom_params,
-    trap_params,
-    1,
-    f,
-    zero_noise,
-    zero_noise,
-    red_laser_params,
-    blue_laser_params,
-    detuning_params,
-    decay_params,
-    true,
-    true,
-    false,
-    true,
-    false,
-    [[0.0, 0.0, 0.0], [4.0, 0.0, 0.0]],
-    2π * 500.0 * 4.0^6,
-    1.0,
-    1.0,
-    π / 2,
-    0.0,
-)
-
-ρ, ρ2 = simulation_czlp(cz_cfg; reltol = 1.0e-6, abstol = 1.0e-8)
-two_qubit_probs = get_two_qubit_probs(ρ, ρ2)
-plot_two_qubit_probs(tspan, two_qubit_probs)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">0.0%┣                                                ┫ 0/1 [00:00&lt;00:00, -0s/it]
-100.0%┣██████████████████████████████████████████┫ 1/1 [00:04&lt;Inf:Inf, InfGs/it]
-100.0%┣██████████████████████████████████████████┫ 1/1 [00:04&lt;Inf:Inf, InfGs/it]</code></pre><p>For a full CZ analysis workflow, follow this sequence:</p><ol><li>Build a physically calibrated <code>CZLPConfig</code>.</li><li>Use <code>simulation_czlp</code> for the state evolution.</li><li>Use <code>get_parity_fidelity</code> to calibrate the phase compensation.</li><li>Use <code>get_parity</code> and <code>get_cz_infidelity</code> to analyze gate performance.</li></ol></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Home</a><a class="docs-footer-nextpage" href="../library/">API »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Monday 13 April 2026 16:07">Monday 13 April 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+# Get initial atom coordinates and velocities
+N = 200;
+samples, acc_rate = samples_generate(trap_params, atom_params, N; skip=5000, freq=1000);</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Home</a><a class="docs-footer-nextpage" href="../library/">API »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Saturday 18 April 2026 15:54">Saturday 18 April 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
