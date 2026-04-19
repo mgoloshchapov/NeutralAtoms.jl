@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Two-Qubit Blockade Simulation · NeutralAtoms.jl</title><meta name="title" content="Two-Qubit Blockade Simulation · NeutralAtoms.jl"/><meta property="og:title" content="Two-Qubit Blockade Simulation · NeutralAtoms.jl"/><meta property="twitter:title" content="Two-Qubit Blockade Simulation · NeutralAtoms.jl"/><meta name="description" content="Documentation for NeutralAtoms.jl."/><meta property="og:description" content="Documentation for NeutralAtoms.jl."/><meta property="twitter:description" content="Documentation for NeutralAtoms.jl."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/logo.ico" rel="icon" type="image/x-icon"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../"><img src="../../assets/logo.svg" alt="NeutralAtoms.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../">NeutralAtoms.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../">Overview</a></li><li><a class="tocitem" href="../release_recapture/">Release And Recapture</a></li><li><a class="tocitem" href="../single_atom_rydberg/">Single-Atom Two-Photon Rydberg Dynamics</a></li><li class="is-active"><a class="tocitem" href>Two-Qubit Blockade Simulation</a></li></ul></li><li><a class="tocitem" href="../../library/">API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Two-Qubit Blockade Simulation</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Two-Qubit Blockade Simulation</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/mgoloshchapov/NeutralAtoms.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/mgoloshchapov/NeutralAtoms.jl/blob/main/docs/src/examples/two_qubit_cz.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Two-Qubit-Blockade-Simulation"><a class="docs-heading-anchor" href="#Two-Qubit-Blockade-Simulation">Two-Qubit Blockade Simulation</a><a id="Two-Qubit-Blockade-Simulation-1"></a><a class="docs-heading-anchor-permalink" href="#Two-Qubit-Blockade-Simulation" title="Permalink"></a></h1><p><code>simulation_czlp</code> extends the same ingredients to a two-atom blockade model in the spirit of <a href="https://arxiv.org/abs/1908.06101">arXiv:1908.06101</a>.</p><pre><code class="language-julia hljs">using NeutralAtoms
+using QuantumOptics
+using Plots
+using Random
+
+Random.seed!(1234)
+
+atom_params = [86.9091835, 10.0]
+trap_params = [1000.0, 1.1, w0_to_z0(1.1, 0.813, 1.3)]
+
+Ωr = 2π * 6.0
+Ωb = 2π * 6.0
+Δ0 = 2π * 200.0
+
+first_laser_params = Dict(
+    &quot;Ω&quot; =&gt; Ωr,
+    &quot;w0&quot; =&gt; 10.0,
+    &quot;z0&quot; =&gt; w0_to_z0(10.0, 0.795),
+    &quot;θ&quot; =&gt; 0.0,
+    &quot;n_sg&quot; =&gt; 1,
+    &quot;type&quot; =&gt; &quot;gauss&quot;,
+)
+second_laser_params = Dict(
+    &quot;Ω&quot; =&gt; Ωb,
+    &quot;w0&quot; =&gt; 3.5,
+    &quot;z0&quot; =&gt; w0_to_z0(3.5, 0.475),
+    &quot;θ&quot; =&gt; 0.0,
+    &quot;n_sg&quot; =&gt; 1,
+    &quot;type&quot; =&gt; &quot;gauss&quot;,
+)
+
+f = collect(0.02:0.02:0.10)
+phase_amplitudes = zeros(length(f))
+detuning_params = [Δ0, -δ_twophoton(Ωr, Ωb, Δ0)]
+decay_params = [2π * 0.1, 2π * 0.1, 0.0, 0.0]
+error_options = Dict(
+    &quot;laser_noise&quot; =&gt; false,
+    &quot;spontaneous_decay_intermediate&quot; =&gt; true,
+    &quot;spontaneous_decay_rydberg&quot; =&gt; false,
+    &quot;atom_motion&quot; =&gt; true,
+    &quot;free_motion&quot; =&gt; true,
+    &quot;xy_motion&quot; =&gt; true,
+    &quot;z_motion&quot; =&gt; true,
+    &quot;Doppler&quot; =&gt; true,
+)
+
+ket_plus = (ket_0 + ket_1) / sqrt(2)
+tspan = [0.0, 0.05]
+
+cfg = CZLPConfig(
+    tspan,
+    ket_plus ⊗ ket_plus,
+    atom_params,
+    trap_params,
+    1,
+    f,
+    phase_amplitudes,
+    phase_amplitudes,
+    first_laser_params,
+    second_laser_params,
+    detuning_params,
+    decay_params,
+    error_options,
+    [[-2.0, 0.0, 0.0], [2.0, 0.0, 0.0]],
+    2π * 500.0 * 4.0^6,
+    1.0,
+    1.0,
+    π / 2,
+    0.0,
+)
+
+ρ, ρ2 = redirect_stdout(devnull) do
+    redirect_stderr(devnull) do
+        simulation_czlp(cfg; reltol = 1e-6, abstol = 1e-8)
+    end
+end
+
+two_qubit_probs = get_two_qubit_probs(ρ, ρ2)
+plot_two_qubit_probs(tspan, two_qubit_probs)</code></pre><img src="c4d080a3.svg" alt="Example block output"/><p>For phase-gate calibration and fidelity analysis, the main helpers are <code>get_fidelity_with_rz_phi</code>, <code>CZ_calibration_by_fidelity_oscillation</code>, <code>get_parity_osc</code>, and <code>get_cz_infidelity</code>.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../single_atom_rydberg/">« Single-Atom Two-Photon Rydberg Dynamics</a><a class="docs-footer-nextpage" href="../../library/">API »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Sunday 19 April 2026 14:34">Sunday 19 April 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
