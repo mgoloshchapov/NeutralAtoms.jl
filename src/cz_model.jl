@@ -19,11 +19,21 @@ Return the blockade interaction `V(t)` between two sampled atoms.
 
 The interaction follows the van der Waals scaling `c6 / R(t)^6`.
 """
-@inline function get_V(sample1, sample2, center1, center2, ωr, ωz, err_optns, c6, eps=1e-18)
-    X1, Y1, Z1 = get_atom_trajectories(sample1, center1, ωr, ωz, err_optns)[1:3]
-    X2, Y2, Z2 = get_atom_trajectories(sample2, center2, ωr, ωz, err_optns)[1:3]
-    V = t -> (c6 / (eps + ((X1(t) - X2(t))^2 + (Y1(t) - Y2(t))^2 + (Z1(t) - Z2(t))^2)^3))
-    return V
+@inline function get_V(sample1, sample2, center1, center2, ωr, ωz, error_options, c6, eps=1e-18)
+    errs = deepcopy(error_options)
+    if errs["blockade"]
+        errs["xy_motion"] = true
+        errs["z_motion"] = true 
+        X1, Y1, Z1 = get_atom_trajectories(sample1, center1, ωr, ωz, errs)[1:3] 
+        X2, Y2, Z2 = get_atom_trajectories(sample2, center2, ωr, ωz, errs)[1:3]
+        V = t -> (c6 / (eps + ((X1(t) - X2(t))^2 + (Y1(t) - Y2(t))^2 + (Z1(t) - Z2(t))^2)^3))
+        return V
+    else
+        cx1, cy1, cz1 = center1
+        cx2, cy2, cz2 = center2
+        V = t -> (c6 / (eps + ((cx1-cx2)^2 + (cy1-cy2)^2 + (cz1-cz2)^2)^3))
+        return V    
+    end
 end
 
 """
@@ -57,17 +67,14 @@ simulation.
     for i in 1:2
         X, Y, Z, Vx, Vy, Vz = get_atom_trajectories(samples[i], centers[i], ωr, ωz, error_options);
 
-        if error_options["Doppler"]
-            coefficients_two = [coefficients_two; [
-                t -> Δ(Vx(t), Vz(t), first_laser_params) - Δ0,
-                t -> δ(Vx(t), Vz(t), first_laser_params, second_laser_params) - δ0,
-            ]]
-        else
-            coefficients_two = [coefficients_two; [
-                t -> - Δ0,
-                t ->  - δ0,
-            ]]
-        end
+        coefficients_two = [coefficients_two; [
+            t -> Δ(Vx(t), Vz(t), first_laser_params) - Δ0,
+            t -> δ(Vx(t), Vz(t), first_laser_params, second_laser_params) - δ0,
+        ]]
+
+        # Hamiltonian params trajectories
+        Ω1 = t -> exp(1.0im * (ϕ_1(t) + ϕ_first(t))) * Ω(X(t), Y(t), Z(t), first_laser_params);
+        Ω2 = t -> exp(1.0im * (ϕ_2(t) + ϕ_sec(t))) * Ω(X(t), Y(t), Z(t), second_laser_params);
 
         # Generate phase noise traces for red and blue lasers
         ϕ_red_res  = ϕ(tspan_noise, f, first_laser_phase_amplitudes);
@@ -76,11 +83,6 @@ simulation.
         # Interpolate phase noise traces to pass to hamiltonian
         ϕ_1  = interpolate(nodes, ϕ_red_res, Gridded(Linear()));
         ϕ_2 = interpolate(nodes, ϕ_blue_res, Gridded(Linear()));
-
-        # Hamiltonian params trajectories
-        Ω1 = t -> exp(1.0im * (ϕ_1(t) + ϕ_first(t))) * Ω(X(t), Y(t), Z(t), first_laser_params );
-        Ω2 = t -> exp(1.0im * (ϕ_2(t) + ϕ_sec(t))) * Ω(X(t), Y(t), Z(t), second_laser_params);
-
         
         coefficients_two = [coefficients_two; 
             [
@@ -170,6 +172,29 @@ function pure_simulation_czlp(cfg::CZLPConfig;ode_kwargs...)
     return ψt
 end 
 
+function CZ_caliration(cfg::CZLPConfig;ode_kwargs...)
+    cfg_CZ = deepcopy(cfg)
+
+    cfg_CZ.ψ0 = (ket_0 + ket_1) ⊗ (ket_0 + ket_1) / 2
+    cfg_CZ.n_samples = 1;
+    cfg_CZ.atom_params[2] = 0.1; #temperature  
+    cfg_CZ.error_options = Dict("laser_noise" => false,"spontaneous_decay_intermediate" => false,"spontaneous_decay_rydberg" => false,
+    "atom_motion" => false,"free_motion" => false,"xy_motion" => false,"z_motion" => false,"Doppler" => false, "blockade"=>false);
+    
+    println("Δ = $(round(cfg_CZ.ΔtoΩ; digits=6)), ξ = $(round(cfg_CZ.ξ; digits=6))")
+
+    ψ = pure_simulation_czlp(cfg_CZ)[end]; 
+
+    basis = [ket_0 ⊗ ket_0, ket_0 ⊗ ket_1, ket_1 ⊗ ket_0, ket_1 ⊗ ket_1]
+    state = [dagger(st) * ψ for st in basis] 
+
+    println("Ampls difference: ", abs.(state) .- ones(4)./2)
+    println("Phase on state 01: ", angle(state[2]), ", on state 10: ", angle(state[3])) 
+    # " ", angle(state[3]), " ", angle(state[4]) - 2 * angle(state[2]))
+    #arr = [1+0im, exp(angle(state[2])*1.0im), exp(angle(state[2])*1.0im), -exp(2.0im*angle(state[2]))*0.992] ./ 2 # norm(state - arr)
+    println("avg ϕ_RZ = ", -(angle(state[2])+angle(state[3]))/2, "; phase on |11> = ", angle(state[4])-angle(state[2])-angle(state[3]), "; err_norm = ",norm(abs.(state) .- ones(4)./2))
+    return -angle(state[2])
+end
 
 """
     simulation_czlp(cfg::CZLPConfig; ode_kwargs...)

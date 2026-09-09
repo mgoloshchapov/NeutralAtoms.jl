@@ -2,14 +2,22 @@ using NeutralAtoms
 using QuantumOptics
 using Serialization
 
-function get_6P_config()
-       ΔtoΩ = 0.377371
-       Ωτ = 4.29268
-       ξ = 3.90242  #3.9564
-       return _get_6P_config(ΔtoΩ, Ωτ, ξ)
+function cfg_grad(ΔtoΩ, ξ)
+       _, cfg_ = _get_6P_config(ΔtoΩ, ξ)
+       cfg_.error_options = Dict("laser_noise" => false,"spontaneous_decay_intermediate" => false,"spontaneous_decay_rydberg" => false,
+       "atom_motion" => false,"free_motion" => false,"xy_motion" => false,"z_motion" => false,"Doppler" => false)
+       cfg_.atom_params[2]=0.1
+       return cfg_
 end
 
-function _get_6P_config(ΔtoΩ, Ωτ, ξ)
+function get_6P_config()
+       ΔtoΩ = 0.37737
+       ξ = 3.90242   
+       ξ = 3.982 #3.955 #3.6
+       return _get_6P_config(ΔtoΩ, ξ)
+end
+
+function _get_6P_config(ΔtoΩ, ξ)
        m = 86.9091835;            # Atom params
        T = 70.0 # 70.0;
        atom_params = [m, T];
@@ -76,6 +84,7 @@ function _get_6P_config(ΔtoΩ, Ωτ, ξ)
        n_samples = 20;
        shift = [0.0,0.0,0.0]
        error_options = Dict("laser_noise" => false,
+                        "blockade"=>false,
                         "spontaneous_decay_intermediate" => true,
                         "spontaneous_decay_rydberg" => true,
                         "atom_motion" => true,
@@ -107,14 +116,14 @@ function _get_6P_config(ΔtoΩ, Ωτ, ξ)
               error_options
               );
  
-       d = 2.7;
+       d = 3.6;
 
        #atom_centers = [[0.0, 0.0, -0.5*d], [0.0, 0.0, 0.5*d]]
        atom_centers = [[-0.5*d, 0.0, 0.0 ], [0.5*d, 0.0, 0.0]]
 
-       c6 = 2π * 135298 #узнать для n=74
+       c6 = 2π * 1.6e6  # 135298 # для n=74 1.6e6  #
        #ΔtoΩ = 0.377371
-       #Ωτ = 4.29268
+       Ωτ = 4.29268
        #ξ = 3.9564 # 3.90242
        ket_pos = (ket_0 + ket_1)/sqrt(2)
        ψ0_cz = ket_pos ⊗ ket_pos
@@ -127,6 +136,7 @@ function _get_6P_config(ΔtoΩ, Ωτ, ξ)
        
        ϕ2 = 2*τ * ΔtoΩ * Ω_twophoton;
        ϕ1 = (ϕ2 - π)/2  
+       ϕ_RZ = 1.9053
        tspan_cz = [0.0, 2*τ];
        
        cfg_czlp = NeutralAtoms.CZLPConfig(
@@ -154,7 +164,7 @@ function _get_6P_config(ΔtoΩ, Ωτ, ξ)
               ΔtoΩ,
               Ωτ,
               ξ,
-              ϕ1
+              ϕ_RZ
        )
 
        return cfg, cfg_czlp

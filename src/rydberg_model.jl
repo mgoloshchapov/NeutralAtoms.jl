@@ -60,24 +60,31 @@ end
     cx, cy, cz = center
 
     x, y, z, vx, vy, vz = atom_motion ? sample : zeros(Float64, 6);
+
+    if err_optns["Doppler"]   
+        Vx = t -> V(t, x, vx, ωr; free=free_motion);
+        Vy = t -> V(t, y, vy, ωr; free=free_motion);
+        Vz = t -> V(t, z, vz, ωz; free=free_motion);
+    else
+        Vx = t -> 0.0 
+        Vy = t -> 0.0 
+        Vz = t -> 0.0
+    end
+
     if err_optns["xy_motion"]
         X  = t -> cx + R(t, x, vx, ωr; free=free_motion);
         Y  = t -> cy + R(t, y, vy, ωr; free=free_motion);
-        Vx = t -> V(t, x, vx, ωr; free=free_motion);
-        Vy = t -> V(t, y, vy, ωr; free=free_motion);
     else
-        X  = t -> cx
-        Y  = t -> cy
-        Vx = t -> 0.0 
-        Vy = t -> 0.0
+        X = t -> cx
+        Y = t -> cy
     end
+
     if err_optns["z_motion"]
         Z  = t -> cz + R(t, z, vz, ωz; free=free_motion);
-        Vz = t -> V(t, z, vz, ωz; free=free_motion);
     else
         Z  = t -> cz
-        Vz = t -> 0.0 
     end
+
     return X, Y, Z, Vx, Vy, Vz;
 end
 
@@ -210,17 +217,10 @@ laser phase noise into the effective two-photon model.
     # Trajectories
     X, Y, Z, Vx, Vy, Vz = get_atom_trajectories(sample, center, ωr, ωz, error_options);
 
-    if error_options["Doppler"]
-        sigma_coeffs = [
-            t -> Δ(Vx(t), Vz(t), first_laser_params) - Δ0,
-            t -> δ(Vx(t), Vz(t), first_laser_params, second_laser_params) - δ0,
-        ]
-    else
-        sigma_coeffs = [
-            t -> - Δ0,
-            t ->  - δ0,
-        ]
-    end
+    sigma_coeffs = [
+        t -> Δ(Vx(t), Vz(t), first_laser_params) - Δ0,
+        t -> δ(Vx(t), Vz(t), first_laser_params, second_laser_params) - δ0,]
+
     # Interpolate phase noise traces to pass to hamiltonian
     if error_options["laser_noise"]
         # Generate phase noise traces for first and second lasers

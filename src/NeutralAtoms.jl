@@ -47,10 +47,10 @@ export
     simulation_czlp, CZLPConfig, get_two_qubit_probs, plot_two_qubit_probs,
 
     get_gate, project_on_qubit, get_parity_osc,
-    get_fidelity_with_rz_phi, CZ_calibration_by_PhiPlus_fidelity,
-    get_rydberg_fidelity_configs, get_rydberg_infidelity, get_cz_error_budget,
+    get_fidelity_with_rz_phi, CZ_caliration, PhiPlus_fidelity_osc,
+    get_rydberg_fidelity_configs, get_rydberg_error_budget, get_cz_error_budget,
 
-    save_QO_operator, load_QO_operator
+    save_with_JLD2, load_with_JLD2
         
 include("utilities.jl")
 include("basic_experiments.jl")

@@ -5,6 +5,38 @@ using DataFrames
 using CSV
 using DelimitedFiles 
 
+function get_default_cxy()
+       df = DataFrame(readdlm("data\\flattop_data.dat"), :auto);
+       corrX = -92.1
+       corrY = -88.7
+       x = df.x2 .+ corrX
+       y = df.x4 .+ corrY
+       z = 1 .- df.x6;
+
+       xx = round.(3.8*x, digits=2);
+       yy = round.(3.8*y, digits=2); #yy[1]
+       x_span = maximum(xx)-minimum(xx);
+       y_span = maximum(yy)-minimum(yy);
+       z0 = sqrt.(z) .- 0.168 #0.166
+       z_z = (z0) ./ maximum(z0)
+       zz = z_z * 1.05 ; #1.02;
+       len_x, len_y = 0,0
+       if (xx[1] == xx[31])
+       len_x = 30
+       len_y = 33
+       end;
+       n_max = 20
+       m_max = n_max
+       dx = x_span/len_x
+       dy = y_span/len_y
+       x_0 = [-x_span/2 : x_span/(len_x-1) : x_span/2;];
+       y_0 = [-y_span/2 : y_span/(len_y-1) : y_span/2;];
+
+       w = 2. ;
+       cxy = NeutralAtoms.decomposition_HG_2d(xx, yy, zz, w,dx,dy);
+       c_xy = 1.05 * cxy; # renormalization
+       return c_xy
+end
 
 function get_default_configs()
        # Atom params
@@ -43,12 +75,12 @@ function get_default_configs()
        λr = 0.795;
        λb = 0.475;
        wr = 50.0;
-       wb = 1.2 #2.0 #10.0;
+       wb = 2.0 #10.0; #1.2 #
        zr = w0_to_z0(wr, λr);
        zb = w0_to_z0(wb, λb);
 
-       Δ0 = 2.0*π * 1711 #870 #1600.0 #1000.0 #* 1600
-       Ω = 2π * 2.41 # 2.0;
+       Δ0 = 2.0*π * 2000 #1711 #870 #1600.0 #1000.0 #* 1600
+       Ω = 2π * 2.3 #2.41 # 2.0;
        a = 2 #sqrt(1.864) #       #a = 2.0 
        Ωr = a * sqrt(2* Δ0 * Ω);
        Ωb = 1/a * sqrt(2* Δ0 * Ω);
@@ -67,9 +99,13 @@ function get_default_configs()
               "θ" => θr,"n_sg" => nr,"type" => "gauss")
        second_laser_params = Dict("Ω" => Ωb,"w0" => wb,"z0" => zb,
               "θ" => θb,"n_sg" => nb,"type" => "gauss")
+              
+       c_xy = get_default_cxy(); 
+       second_laser_params["type"] = "flattop_HG" #"gauss" # 
+       second_laser_params["coeffs_xy"] = c_xy; 
 
        detuning_params = [Δ0, -δ_twophoton(Ωr, Ωb, Δ0)];
-       Γ = 2.0*π * 5.75;
+       Γ = 2.0*π * 5.75; #1.4 #
        Γ0, Γ1, Γl = Γ/4, Γ/4, 2*Γ/4;
        # Quasiclassical calculations of BBR-induced depopulation rates and effective lifetimes
        # of Rydberg nS, nP, and nD alkali-metal atoms with n ≤ 80. T = 300, n=60, S_1/2, Rb87
@@ -85,13 +121,6 @@ function get_default_configs()
        ψ0 = ket_1;
        n_samples = 20;
 
-       atom_motion = true;
-       free_motion = true;
-       laser_noise = false;
-       spontaneous_decay_intermediate = true #false;
-       spontaneous_decay_rydberg = true #false;
-       # spontaneous_decay_intermediate = false;
-       # spontaneous_decay_rydberg = false;
        error_options = Dict("laser_noise" => false,
                         "spontaneous_decay_intermediate" => true,
                         "spontaneous_decay_rydberg" => true,
@@ -99,7 +128,8 @@ function get_default_configs()
                         "free_motion" => true,
                         "xy_motion" => true,
                         "z_motion" => true,
-                        "Doppler" => true
+                        "Doppler" => true,
+                        "blockade" => true
                         )
        shift = [0.0,0.0,0.0]
 
@@ -128,19 +158,20 @@ function get_default_configs()
        d = 3.4 #2.0;
        #atom_centers = [[-d/2, 0.0, 0.0], [d/2, 0.0, 0.0]]
        atom_centers = [[0.0,-d/2, 0.0], [0.0, d/2, 0.0]]
-       c6 = 2π * 135298
+       c6 = 2π * 135298 #2π * 1.6e6 #
        
        """Ωτ = 4.278785545408966  # с учетом блокады
        ΔtoΩ = 0.38378019520864026 
        ξ = 3.9162081717218746"""
-       ΔtoΩ = 0.377371 #идеальные
+       ΔtoΩ = 0.37737 #идеальные
        Ωτ = 4.29268
-       ξ = 3.90242
+       ξ = 3.982
+       #ξ = 4.004926 #4.038 #045 #
        
        ket_pos = (ket_0 + ket_1)/sqrt(2)
        ψ0_cz = ket_pos ⊗ ket_pos
 
-       Ω_twophoton = (2π/T0)
+       Ω_twophoton = (2π/T_twophoton(Ωr, Ωb, Δ0) )
        #τ = 2π / (Ω_twophoton * sqrt(ΔtoΩ^2 + 2.0))
        τ = Ωτ/Ω_twophoton
        VV = c6 / d^6 #3.4^6 #       Ω_twophoton / 2 / V
@@ -184,39 +215,6 @@ function get_default_configs()
        )
 
        return cfg, cfg_czlp
-end
-
-function get_default_cxy()
-       df = DataFrame(readdlm("flattop_data.dat"), :auto);
-       corrX = -92.1
-       corrY = -88.7
-       x = df.x2 .+ corrX
-       y = df.x4 .+ corrY
-       z = 1 .- df.x6;
-
-       xx = round.(3.8*x, digits=2);
-       yy = round.(3.8*y, digits=2); #yy[1]
-       x_span = maximum(xx)-minimum(xx);
-       y_span = maximum(yy)-minimum(yy);
-       z0 = sqrt.(z) .- 0.168 #0.166
-       z_z = (z0) ./ maximum(z0)
-       zz = z_z * 1.05 ; #1.02;
-       len_x, len_y = 0,0
-       if (xx[1] == xx[31])
-       len_x = 30
-       len_y = 33
-       end;
-       n_max = 20
-       m_max = n_max
-       dx = x_span/len_x
-       dy = y_span/len_y
-       x_0 = [-x_span/2 : x_span/(len_x-1) : x_span/2;];
-       y_0 = [-y_span/2 : y_span/(len_y-1) : y_span/2;];
-
-       w = 2. ;
-       cxy = NeutralAtoms.decomposition_HG_2d(xx, yy, zz, w,dx,dy);
-       c_xy = 1.05 * cxy; # renormalization
-       return c_xy
 end
 
 function get_ideal_cxy()

@@ -323,14 +323,14 @@ end
 
 using JLD2
 
-function save_QO_operator(filename::String, op::Operator; name::String="operator")
+function save_with_JLD2(filename::String, op; name::String="operator") #op::Operator
     jldopen(filename, "w") do file
         file[name] = op
     end
-    println("Operator saved to $filename")
+    println("Saved to $filename")
 end
 
-function load_QO_operator(filename::String; name::String="operator")
+function load_with_JLD2(filename::String; name::String="operator")
     op = jldopen(filename, "r") do file
         file[name]
     end
