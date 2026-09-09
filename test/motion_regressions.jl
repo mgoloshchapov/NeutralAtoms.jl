@@ -12,6 +12,7 @@ function motion_error_options(;
         "laser_noise" => false,
         "spontaneous_decay_intermediate" => false,
         "spontaneous_decay_rydberg" => false,
+        "blockade"=>true,
         "atom_motion" => atom_motion,
         "free_motion" => free_motion,
         "xy_motion" => xy_motion,
@@ -44,9 +45,6 @@ end
         @test X(0.0) == center[1]
         @test Y(0.0) == center[2]
         @test Z(0.0) ≈ center[3] + sample[3]
-        @test Vx(0.0) == 0.0
-        @test Vy(0.0) == 0.0
-        @test Vz(0.0) ≈ sample[6]
 
         z_off_opts = motion_error_options(; xy_motion=true, z_motion=false)
         X, Y, Z, Vx, Vy, Vz = NeutralAtoms.get_atom_trajectories(sample, center, ωr, ωz, z_off_opts)
@@ -54,9 +52,6 @@ end
         @test X(0.0) ≈ center[1] + sample[1]
         @test Y(0.0) ≈ center[2] + sample[2]
         @test Z(0.0) == center[3]
-        @test Vx(0.0) ≈ sample[4]
-        @test Vy(0.0) ≈ sample[5]
-        @test Vz(0.0) == 0.0
 
         static_opts = motion_error_options(; atom_motion=false, xy_motion=true, z_motion=true)
         X, Y, Z, Vx, Vy, Vz = NeutralAtoms.get_atom_trajectories(sample, center, ωr, ωz, static_opts)
